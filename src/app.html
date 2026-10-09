@@ -1,0 +1,737 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>えいご あそびランド</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Kiwi+Maru:wght@400;500&display=swap">
+<style>
+/* Layout: one-screen playroom — sticky top bar, chunky toy-block tiles on dotted sky paper, every target thumb-sized */
+:root {
+  --sky: #E4F2FB;
+  --dot: #CFE3F1;
+  --card: #FFFFFF;
+  --ink: #22304F;
+  --ink-soft: #5B6A88;
+  --line: #C9DCEB;
+  --lift: #B9D2E6;
+  --sun: #FFC83D;
+  --tomato: #FF6F59;
+  --leaf: #3CC48A;
+  --berry: #A08BFF;
+  --ocean: #4AB3EE;
+  --good-soft: #D5F5E6;
+  --on-accent: #1B2440;
+  --font: "Fredoka", "Kiwi Maru", "Hiragino Maru Gothic ProN", "Arial Rounded MT Bold", "Yu Gothic", system-ui, sans-serif;
+  --font-ja: "Kiwi Maru", "Hiragino Maru Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sky: #132039; --dot: #1C2C4C; --card: #1F2F51; --ink: #EEF4FF; --ink-soft: #A9B8D6;
+    --line: #34497A; --lift: #0A1326; --good-soft: #1D4A3C; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --sky: #132039; --dot: #1C2C4C; --card: #1F2F51; --ink: #EEF4FF; --ink-soft: #A9B8D6;
+  --line: #34497A; --lift: #0A1326; --good-soft: #1D4A3C; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background-color: var(--sky);
+  background-image: radial-gradient(var(--dot) 1.6px, transparent 1.8px);
+  background-size: 28px 28px;
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 18px;
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+button:focus-visible { outline: 4px solid var(--ocean); outline-offset: 3px; }
+.ja { font-family: var(--font-ja); }
+
+#app { max-width: 880px; margin: 0 auto; padding-inline: 16px; padding-block: 0 40px; min-height: 100%; display: flex; flex-direction: column; }
+main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
+
+/* chunky toy-block surface */
+.chunky {
+  background: var(--card);
+  border-radius: 24px;
+  box-shadow: 0 6px 0 var(--lift);
+  transition: transform .08s, box-shadow .08s;
+}
+.chunky:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 2px 0 var(--lift); }
+
+/* top bar */
+.bar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  display: flex; align-items: center; gap: 12px;
+  padding-block: 12px; background: var(--sky);
+}
+.brand { font-weight: 700; font-size: 1.3rem; letter-spacing: .02em; flex: 1; }
+.brand b { color: var(--tomato); }
+.bar-title { flex: 1; text-align: center; font-weight: 600; font-size: 1.15rem; font-family: var(--font-ja); }
+.bar-btn { width: 56px; height: 56px; font-size: 1.6rem; display: grid; place-items: center; }
+.stars { display: flex; align-items: center; gap: 6px; height: 56px; padding-inline: 16px; font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stars.bump { animation: pop .45s; }
+
+/* home */
+.hello { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; }
+.hello-en { font-size: 2.6rem; font-weight: 700; margin: 0; line-height: 1.1; color: var(--tomato); }
+.hello-ja { margin: 4px 0 0; font-size: 1.1rem; }
+.next { flex: 1 1 220px; max-width: 340px; min-width: 0; }
+.next p { margin: 8px 0 0; font-size: .95rem; color: var(--ink-soft); font-family: var(--font-ja); }
+.next b { color: var(--ink); font-family: var(--font); font-size: 1.2rem; }
+.meter { height: 18px; border-radius: 99px; background: var(--sky); box-shadow: inset 0 0 0 2px var(--line); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--sun); border-radius: 99px; min-width: 18px; }
+
+.modes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.mode {
+  background: var(--c); color: var(--on-accent);
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 2px;
+  padding: 18px 20px; min-height: 150px; text-align: left; position: relative; overflow: hidden;
+}
+.mode .ico { font-size: 3rem; line-height: 1; margin-bottom: auto; }
+.mode .m-ja { font-family: var(--font-ja); font-weight: 500; font-size: 1.25rem; }
+.mode .m-en { font-size: .95rem; font-weight: 600; opacity: .7; letter-spacing: .04em; }
+.t-stk { grid-column: span 2; min-height: 110px; flex-direction: row; align-items: center; justify-content: flex-start; gap: 16px; }
+.t-stk .ico { margin-bottom: 0; }
+@media (min-width: 640px) {
+  .modes { grid-template-columns: repeat(6, 1fr); }
+  .t-cards, .t-quiz { grid-column: span 3; min-height: 190px; }
+  .t-cards .ico, .t-quiz .ico { font-size: 4rem; }
+  .t-abc, .t-spell, .t-stk { grid-column: span 2; min-height: 160px; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 2px; }
+  .t-stk .ico { margin-bottom: auto; }
+}
+.link { align-self: center; color: var(--ink-soft); font-family: var(--font-ja); font-size: .95rem; text-decoration: underline; text-underline-offset: 4px; padding: 12px; }
+
+/* headings */
+.ask { margin: 8px 0 0; text-align: center; font-family: var(--font-ja); font-weight: 500; font-size: 1.4rem; text-wrap: balance; }
+
+/* category picker */
+.cats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+@media (min-width: 640px) { .cats { grid-template-columns: repeat(3, 1fr); } }
+.cat { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 20px 12px 16px; }
+.cat .ico { font-size: 3.2rem; line-height: 1.1; }
+.cat .c-ja { font-family: var(--font-ja); font-weight: 500; font-size: 1.2rem; }
+.cat .c-en { font-weight: 600; color: var(--ink-soft); font-size: .95rem; }
+.cat .c-seen { font-size: .8rem; color: var(--ink-soft); font-family: var(--font-ja); font-variant-numeric: tabular-nums; }
+
+/* pictures */
+.emoji { line-height: 1; display: block; }
+.swatch { display: block; width: 1em; height: 1em; border-radius: 50%; background: var(--sw); box-shadow: inset 0 0 0 .05em rgba(0,0,0,.12), 0 0 0 .04em var(--line); }
+.numpic { display: flex; flex-direction: column; align-items: center; gap: .08em; }
+.digit { font-size: .55em; font-weight: 700; line-height: 1; color: var(--tomato); }
+.dots { display: grid; grid-template-columns: repeat(5, .2em); gap: .05em; justify-content: center; }
+.dots i { width: .2em; height: .2em; border-radius: 50%; background: var(--ocean); display: block; }
+
+/* word cards */
+.card-stage { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.bigcard { width: min(100%, 440px); display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 32px 20px 28px; }
+.bigcard .pic { font-size: 8rem; min-height: 1.1em; display: grid; place-items: center; }
+.word { font-size: 3.4rem; font-weight: 600; line-height: 1.1; letter-spacing: .02em; overflow-wrap: anywhere; text-align: center; }
+.word em, .abc-word em { font-style: normal; color: var(--tomato); }
+.ja-word { font-family: var(--font-ja); font-size: 1.3rem; color: var(--ink-soft); }
+.card-ctrl { display: flex; gap: 20px; align-items: center; }
+.round { width: 72px; height: 72px; border-radius: 50%; font-size: 1.8rem; display: grid; place-items: center; }
+.round.speak { width: 88px; height: 88px; background: var(--ocean); color: var(--on-accent); font-size: 2.2rem; }
+.count { margin: 0; color: var(--ink-soft); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.pill { padding: 16px 28px; border-radius: 99px; background: var(--sun); color: var(--on-accent); font-family: var(--font-ja); font-weight: 500; font-size: 1.15rem; }
+.pill.alt { background: var(--card); color: var(--ink); }
+.row { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+
+/* quiz */
+.quiz, .spell { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+.progress { display: flex; gap: 8px; }
+.progress i { width: 16px; height: 16px; border-radius: 50%; background: var(--card); box-shadow: inset 0 0 0 2px var(--line); display: block; }
+.progress i.done { background: var(--leaf); box-shadow: none; }
+.progress i.now { background: var(--sun); box-shadow: none; transform: scale(1.25); }
+.listen { display: flex; align-items: center; gap: 12px; padding: 14px 28px 14px 18px; border-radius: 99px; background: var(--ocean); color: var(--on-accent); font-family: var(--font-ja); font-weight: 500; font-size: 1.2rem; }
+.listen .l-ico { font-size: 2rem; }
+.opts { display: grid; gap: 16px; width: 100%; max-width: 620px; }
+.opts.n3 { grid-template-columns: repeat(3, 1fr); }
+.opts.n4 { grid-template-columns: repeat(2, 1fr); max-width: 480px; }
+.opt { aspect-ratio: 1; max-width: 100%; display: grid; place-items: center; font-size: clamp(3.4rem, 14vw, 6rem); }
+.opt.correct { background: var(--good-soft); box-shadow: 0 6px 0 var(--leaf), inset 0 0 0 5px var(--leaf); animation: pop .5s; }
+.opt.wrong { animation: shake .45s; opacity: .35; }
+
+/* ABC */
+.abc { display: flex; flex-direction: column; gap: 20px; }
+.abc-show { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 32px; padding: 24px; }
+.abc-big { font-size: 5.5rem; font-weight: 700; line-height: 1; color: var(--tomato); }
+.abc-big small { font-size: .6em; color: var(--ink); margin-left: .12em; }
+.abc-pic { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.abc-pic .emoji { font-size: 5rem; }
+.abc-word { font-size: 2rem; font-weight: 600; }
+.abc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); gap: 10px; }
+.abc-key { height: 60px; border-radius: 16px; font-size: 1.7rem; font-weight: 600; }
+.abc-key.on { background: var(--sun); color: var(--on-accent); }
+
+/* spelling */
+.spell-top { display: flex; align-items: center; gap: 24px; }
+.spell-top .pic { font-size: 7rem; }
+.slots { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.slots.shake { animation: shake .45s; }
+.slot { width: 64px; height: 76px; border-radius: 16px; border: 3px dashed var(--line); background: var(--card); font-size: 2.4rem; font-weight: 600; display: grid; place-items: center; }
+.slot.full { border-style: solid; border-color: var(--ocean); }
+.slot.ok { border-color: var(--leaf); background: var(--good-soft); }
+.ghost { color: var(--ink-soft); opacity: .35; }
+.tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 520px; }
+.tile { width: 68px; height: 68px; border-radius: 18px; background: var(--sun); color: var(--on-accent); font-size: 2.2rem; font-weight: 600; }
+.tile:disabled { opacity: .2; box-shadow: none; transform: translateY(4px); cursor: default; }
+
+/* result */
+.result { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 36px 20px; text-align: center; }
+.result .big { font-size: 3rem; font-weight: 700; color: var(--tomato); margin: 0; line-height: 1.1; }
+.result .earned { font-size: 2.6rem; letter-spacing: .1em; overflow-wrap: anywhere; }
+.result p { margin: 0; font-family: var(--font-ja); font-size: 1.2rem; }
+
+/* stickers */
+.stk-note { text-align: center; margin: 0; color: var(--ink-soft); font-family: var(--font-ja); }
+.stickers { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 14px; }
+.sticker { aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; font-size: 2.8rem; }
+.sticker.locked { background: transparent; box-shadow: none; border: 3px dashed var(--line); color: var(--ink-soft); font-size: 1.6rem; font-weight: 600; }
+
+/* parent */
+.panel { padding: 22px 22px 24px; display: flex; flex-direction: column; gap: 12px; font-family: var(--font-ja); }
+.panel h2 { margin: 0; font-size: 1.3rem; font-weight: 500; }
+.panel h3 { margin: 8px 0 0; font-size: 1.05rem; font-weight: 500; }
+.panel ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; font-size: .95rem; max-width: 65ch; }
+.seg { display: flex; flex-wrap: wrap; gap: 10px; }
+.seg button { padding: 12px 20px; border-radius: 14px; background: var(--sky); box-shadow: inset 0 0 0 2px var(--line); font-family: var(--font-ja); font-size: 1rem; }
+.seg button[aria-pressed="true"] { background: var(--sun); color: var(--on-accent); box-shadow: none; }
+.seg .danger { background: var(--tomato); color: var(--on-accent); box-shadow: none; }
+.note { font-size: .9rem; color: var(--ink-soft); margin: 0; }
+
+/* toast + sparks */
+.toast {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  background: var(--ink); color: var(--sky); padding: 12px 22px; border-radius: 99px;
+  font-family: var(--font-ja); font-size: 1.1rem; display: flex; align-items: center; gap: 10px; z-index: 20;
+  box-shadow: 0 6px 0 var(--lift); max-width: calc(100% - 32px); animation: pop .4s;
+}
+.toast .t-stk { font-size: 2rem; }
+.spark { position: fixed; pointer-events: none; z-index: 30; font-size: 1.8rem; animation: fly .9s ease-out forwards; }
+
+@keyframes pop { 0% { transform: scale(.8); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+.toast { animation-name: toastIn; }
+@keyframes toastIn { from { transform: translate(-50%, 20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+@keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-10px); } 40% { transform: translateX(10px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(6px); } }
+@keyframes fly { from { transform: translate(-50%, -50%) scale(.6); opacity: 1; } to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div id="app"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+/* ---------- data ---------- */
+/*DATA-START*/
+const nounQ = w => w.pl ? `Where are the ${w.en}?` : `Where is the ${w.en}?`;
+const CATS = [
+  { id: 'animals', ja: 'どうぶつ', en: 'Animals', icon: '🐻', q: nounQ, words: [
+    { en: 'cat', ja: 'ねこ', e: '🐱' }, { en: 'dog', ja: 'いぬ', e: '🐶' }, { en: 'rabbit', ja: 'うさぎ', e: '🐰' },
+    { en: 'bear', ja: 'くま', e: '🐻' }, { en: 'lion', ja: 'ライオン', e: '🦁' }, { en: 'elephant', ja: 'ぞう', e: '🐘' },
+    { en: 'monkey', ja: 'さる', e: '🐵' }, { en: 'pig', ja: 'ぶた', e: '🐷' }, { en: 'cow', ja: 'うし', e: '🐮' },
+    { en: 'fish', ja: 'さかな', e: '🐟' }, { en: 'bird', ja: 'とり', e: '🐦' }, { en: 'frog', ja: 'かえる', e: '🐸' } ] },
+  { id: 'food', ja: 'たべもの', en: 'Food', icon: '🍎', q: nounQ, words: [
+    { en: 'apple', ja: 'りんご', e: '🍎' }, { en: 'banana', ja: 'バナナ', e: '🍌' }, { en: 'grapes', ja: 'ぶどう', e: '🍇', pl: true },
+    { en: 'strawberry', ja: 'いちご', e: '🍓' }, { en: 'orange', ja: 'オレンジ', e: '🍊' }, { en: 'bread', ja: 'パン', e: '🍞' },
+    { en: 'egg', ja: 'たまご', e: '🥚' }, { en: 'milk', ja: 'ぎゅうにゅう', e: '🥛' }, { en: 'cake', ja: 'ケーキ', e: '🍰' },
+    { en: 'ice cream', ja: 'アイスクリーム', e: '🍦' }, { en: 'rice', ja: 'ごはん', e: '🍚' }, { en: 'carrot', ja: 'にんじん', e: '🥕' } ] },
+  { id: 'colors', ja: 'いろ', en: 'Colors', icon: '🎨', q: w => `Which one is ${w.en}?`, words: [
+    { en: 'red', ja: 'あか', color: '#E53935' }, { en: 'blue', ja: 'あお', color: '#1E73E8' }, { en: 'yellow', ja: 'きいろ', color: '#FFD60A' },
+    { en: 'green', ja: 'みどり', color: '#2BB24C' }, { en: 'pink', ja: 'ピンク', color: '#FF8FC7' }, { en: 'orange', ja: 'オレンジ', color: '#FF8A1F' },
+    { en: 'purple', ja: 'むらさき', color: '#8E44D9' }, { en: 'brown', ja: 'ちゃいろ', color: '#8B5A2B' },
+    { en: 'black', ja: 'くろ', color: '#1A1A1A' }, { en: 'white', ja: 'しろ', color: '#FFFFFF' } ] },
+  { id: 'numbers', ja: 'かず', en: 'Numbers', icon: '🔢', q: w => `Find ${w.en}!`, words: [
+    'one','two','three','four','five','six','seven','eight','nine','ten'
+  ].map((en, i) => ({ en, n: i + 1, ja: ['いち','に','さん','よん','ご','ろく','なな','はち','きゅう','じゅう'][i] })) },
+  { id: 'vehicles', ja: 'のりもの', en: 'Vehicles', icon: '🚌', q: nounQ, words: [
+    { en: 'car', ja: 'くるま', e: '🚗' }, { en: 'bus', ja: 'バス', e: '🚌' }, { en: 'train', ja: 'でんしゃ', e: '🚃' },
+    { en: 'airplane', ja: 'ひこうき', e: '✈️' }, { en: 'ship', ja: 'ふね', e: '🚢' }, { en: 'bicycle', ja: 'じてんしゃ', e: '🚲' },
+    { en: 'taxi', ja: 'タクシー', e: '🚕' }, { en: 'rocket', ja: 'ロケット', e: '🚀' } ] },
+  { id: 'body', ja: 'からだ', en: 'Body', icon: '✋', q: nounQ, words: [
+    { en: 'eye', ja: 'め', e: '👁️' }, { en: 'ear', ja: 'みみ', e: '👂' }, { en: 'nose', ja: 'はな', e: '👃' },
+    { en: 'mouth', ja: 'くち', e: '👄' }, { en: 'hand', ja: 'て', e: '✋' }, { en: 'foot', ja: 'あし', e: '🦶' } ] },
+];
+const CAT = Object.fromEntries(CATS.map(c => [c.id, c]));
+
+const ABC = [
+  ['apple','🍎'],['bear','🐻'],['cat','🐱'],['dog','🐶'],['egg','🥚'],['fish','🐟'],['grapes','🍇'],['hat','🎩'],
+  ['ice cream','🍦'],['juice','🧃'],['king','🤴'],['lion','🦁'],['monkey','🐵'],['nose','👃'],['orange','🍊'],['pig','🐷'],
+  ['queen','👸'],['rabbit','🐰'],['sun','☀️'],['train','🚃'],['umbrella','☂️'],['violin','🎻'],['watch','⌚'],['box','📦'],
+  ['yo-yo','🪀'],['zebra','🦓']
+].map(([w, e], i) => { const u = String.fromCharCode(65 + i); return { u, l: u.toLowerCase(), w, e }; });
+
+const STICKERS = ['🦄','🐳','🦖','🌈','🍩','🚒','🐙','🌻','🦋','🍉','🐧','⚽','🎈','🐞','🍭','🦒','🚁','🐬','🌟','👑'];
+const PRAISE = ['Great!', 'Good job!', 'Excellent!', 'Wonderful!', "That's right!", 'Super!'];
+const EXTRA = ['Try again!', 'Perfect! Great job!', 'Good job!', "Hello! Let's play!"];
+const abcLine = L => `${L.u} is for ${L.w}.`;
+
+// 録音ずみ音声のキー。'#a' は文字の読み方(エー)
+const clipKey = t => t[0] === '#' ? 'L_' + t[1] : t.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+// アプリが読み上げるすべてのフレーズ(tools/build.js が音声を作る)
+function phrases() {
+  const out = new Set();
+  CATS.forEach(c => c.words.forEach(w => { out.add(w.en); out.add(c.q(w)); }));
+  ABC.forEach(L => { out.add(L.w); out.add(abcLine(L)); });
+  [...PRAISE, ...EXTRA].forEach(p => out.add(p));
+  'abcdefghijklmnopqrstuvwxyz'.split('').forEach(ch => out.add('#' + ch));
+  return [...out];
+}
+/*DATA-END*/
+const CLIPS = {/*CLIPS*/};
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const sample = (a, n) => shuffle(a).slice(0, n);
+const rnd = a => a[Math.floor(Math.random() * a.length)];
+const hl = (word, letter) => { const k = word.indexOf(letter); return k < 0 ? word : `${word.slice(0, k)}<em>${word[k]}</em>${word.slice(k + 1)}`; };
+
+/* ---------- storage ---------- */
+const KEY = 'eigo-asobi-v1';
+const state = (() => {
+  const d = { stars: 0, level: 1, rate: 0.8, showJa: true, learned: {} };
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) return { ...d, ...s }; } catch (e) {}
+  return d;
+})();
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+/* ---------- speech ---------- */
+// 録音ずみの音声(CLIPS)を Web Audio で再生する。ない言葉だけ端末の読み上げにまかせる
+const Speech = {
+  ok: true, tts: 'speechSynthesis' in window, voice: null, seq: 0, src: null, buffers: {},
+  init() {
+    if (!this.tts) return;
+    const pickVoice = () => {
+      const vs = speechSynthesis.getVoices();
+      this.voice = vs.find(v => /^en[-_]US/i.test(v.lang) && /Samantha|Google US|Aria|Jenny|Ava|Allison/i.test(v.name))
+        || vs.find(v => /^en[-_]US/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || null;
+    };
+    pickVoice();
+    speechSynthesis.onvoiceschanged = pickVoice;
+  },
+  buffer(k) {
+    if (!this.buffers[k]) {
+      const bin = atob(CLIPS[k]), bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      this.buffers[k] = new Promise((res, rej) => ac.decodeAudioData(bytes.buffer, res, rej));
+    }
+    return this.buffers[k];
+  },
+  async clip(k) {
+    const buf = await this.buffer(k);
+    return new Promise(res => {
+      const s = ac.createBufferSource();
+      s.buffer = buf; s.playbackRate.value = state.rate / 0.8;
+      s.connect(ac.destination); s.onended = res;
+      this.src = s; s.start();
+    });
+  },
+  tts1(text) {
+    if (!this.tts) return Promise.resolve();
+    return new Promise(res => {
+      const u = new SpeechSynthesisUtterance(text[0] === '#' ? text[1] : text);
+      u.lang = 'en-US'; if (this.voice) u.voice = this.voice;
+      u.rate = state.rate; u.pitch = 1.1;
+      u.onend = res; u.onerror = res;
+      speechSynthesis.resume();
+      speechSynthesis.speak(u);
+      setTimeout(res, 5000);
+    });
+  },
+  async one(text) {
+    const k = clipKey(text);
+    if (CLIPS[k] && sfx.ctx()) {
+      try { return await this.clip(k); } catch (e) { delete CLIPS[k]; }
+    }
+    return this.tts1(text);
+  },
+  stop() {
+    if (this.src) { try { this.src.onended = null; this.src.stop(); } catch (e) {} this.src = null; }
+    if (this.tts && (speechSynthesis.speaking || speechSynthesis.pending)) speechSynthesis.cancel();
+  },
+  sayAll(list) {
+    const id = ++this.seq;
+    this.stop();
+    return list.reduce((p, t) => p.then(() => id === this.seq ? this.one(t) : null), Promise.resolve());
+  },
+  say(t) { return this.sayAll([t]); }
+};
+Speech.init();
+
+/* ---------- sound effects ---------- */
+let ac;
+const sfx = {
+  ctx() {
+    if (!ac) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ac = new C(); }
+    if (ac.state === 'suspended') ac.resume();
+    if (!this.unlocked) { // iOS: 最初のタップで無音を鳴らして音を解放する
+      const s = ac.createBufferSource(); s.buffer = ac.createBuffer(1, 1, 22050); s.connect(ac.destination); s.start(); this.unlocked = true;
+    }
+    return ac;
+  },
+  play(notes, type) {
+    const c = this.ctx(); if (!c) return;
+    const now = c.currentTime;
+    notes.forEach(([f, t, d]) => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = type; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, now + t);
+      g.gain.exponentialRampToValueAtTime(0.16, now + t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + t + d);
+      o.connect(g).connect(c.destination);
+      o.start(now + t); o.stop(now + t + d + 0.05);
+    });
+  },
+  good() { this.play([[784, 0, .15], [1047, .12, .3]], 'triangle'); },
+  bad() { this.play([[260, 0, .16], [220, .14, .22]], 'sine'); },
+  fanfare() { this.play([[523, 0, .15], [659, .15, .15], [784, .3, .15], [1047, .45, .5]], 'triangle'); }
+};
+
+/* ---------- ui bits ---------- */
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function burst(el) {
+  if (reduceMotion || !el) return;
+  const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  for (let k = 0; k < 8; k++) {
+    const s = document.createElement('span'), a = k / 8 * Math.PI * 2, d = 90 + Math.random() * 40;
+    s.className = 'spark'; s.textContent = '⭐';
+    s.style.left = cx + 'px'; s.style.top = cy + 'px';
+    s.style.setProperty('--dx', Math.cos(a) * d + 'px'); s.style.setProperty('--dy', Math.sin(a) * d + 'px');
+    document.body.appendChild(s); setTimeout(() => s.remove(), 950);
+  }
+}
+let toastTimer;
+function toast(html) {
+  const t = $('#toast'); t.innerHTML = html; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2800);
+}
+function addStars(n) {
+  const before = Math.floor(state.stars / 5);
+  state.stars += n; save();
+  const after = Math.floor(state.stars / 5);
+  const c = $('#starCount'); if (c) c.textContent = state.stars;
+  const b = $('.stars'); if (b) { b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); }
+  if (after > before && after <= STICKERS.length) {
+    setTimeout(() => toast(`<span class="t-stk">${STICKERS[after - 1]}</span> あたらしい シール ゲット!`), 500);
+  }
+}
+function pic(w, big) {
+  if (w.color) return `<span class="swatch" style="--sw:${w.color}"></span>`;
+  if (w.n) return `<span class="numpic">${big ? `<span class="digit">${w.n}</span>` : ''}<span class="dots">${'<i></i>'.repeat(w.n)}</span></span>`;
+  return `<span class="emoji">${w.e}</span>`;
+}
+const progress = (n, i) => `<div class="progress" aria-label="${i + 1} / ${n}">${Array.from({ length: n }, (_, k) => `<i class="${k < i ? 'done' : k === i ? 'now' : ''}"></i>`).join('')}</div>`;
+
+/* ---------- views ---------- */
+const app = $('#app');
+let view = { name: 'home' };
+const TITLES = { pick: 'どれに する?', cards: 'ことば カード', quiz: 'きいて タッチ', abc: 'ABC', spell: 'もじ ならべ', result: 'できたね!', stickers: 'シール ちょう', parent: 'おうちの かたへ' };
+
+function go(name, params = {}) { view = { name, ...params }; render(); window.scrollTo(0, 0); }
+
+function render() {
+  const home = view.name === 'home';
+  app.innerHTML = `
+    <header class="bar">
+      ${home ? `<span class="brand">えいご<b>あそび</b>ランド</span>` : `<button class="bar-btn chunky" data-act="home" aria-label="ホームへ もどる">🏠</button><span class="bar-title">${TITLES[view.name] || ''}</span>`}
+      <button class="stars chunky" data-act="go" data-arg="stickers" aria-label="あつめた ほし ${state.stars}こ"><span aria-hidden="true">⭐</span><b id="starCount">${state.stars}</b></button>
+    </header>
+    <main>${VIEWS[view.name]()}</main>`;
+}
+
+const VIEWS = {
+  home() {
+    const left = 5 - state.stars % 5;
+    const allDone = Math.floor(state.stars / 5) >= STICKERS.length;
+    const tile = (cls, mode, ja, en, ico, c) =>
+      `<button class="mode chunky ${cls}" style="--c:var(${c})" data-act="mode" data-arg="${mode}"><span class="ico" aria-hidden="true">${ico}</span><span><span class="m-ja">${ja}</span><br><span class="m-en">${en}</span></span></button>`;
+    return `
+      <section class="hello chunky">
+        <div><p class="hello-en">Hello!</p><p class="hello-ja ja">きょうも えいごで あそぼう</p></div>
+        <div class="next">
+          <div class="meter"><i style="width:${(state.stars % 5) / 5 * 100}%"></i></div>
+          <p>${allDone ? 'シールを ぜんぶ あつめたよ!すごい!' : `あと <b>${left}</b>こ ⭐ で シールが もらえるよ`}</p>
+        </div>
+      </section>
+      <nav class="modes" aria-label="あそびを えらぶ">
+        ${tile('t-cards', 'cards', 'ことば カード', 'Word Cards', '🃏', '--sun')}
+        ${tile('t-quiz', 'quiz', 'きいて タッチ', 'Listen & Touch', '👂', '--ocean')}
+        ${tile('t-abc', 'abc', 'エー ビー シー', 'ABC', '🔤', '--leaf')}
+        ${tile('t-spell', 'spell', 'もじ ならべ', 'Spelling', '🧩', '--tomato')}
+        ${tile('t-stk', 'stickers', 'シール ちょう', 'Sticker Book', '🦄', '--berry')}
+      </nav>
+      <button class="link" data-act="go" data-arg="parent">おうちの かたへ ・ せってい</button>`;
+  },
+
+  pick() {
+    return `<h2 class="ask">${view.next === 'cards' ? 'どの ことばを みる?' : 'どれで クイズ する?'}</h2>
+      <div class="cats">${CATS.map(c => {
+        const seen = c.words.filter(w => state.learned[c.id + ':' + w.en]).length;
+        return `<button class="cat chunky" data-act="cat" data-arg="${c.id}">
+          <span class="ico" aria-hidden="true">${c.icon}</span><span class="c-ja">${c.ja}</span><span class="c-en">${c.en}</span>
+          <span class="c-seen">みた ことば ${seen} / ${c.words.length}</span></button>`;
+      }).join('')}</div>`;
+  },
+
+  cards() {
+    const c = CAT[view.cat], w = c.words[view.i], last = view.i === c.words.length - 1;
+    return `<div class="card-stage">
+      <button class="bigcard chunky" data-act="say" aria-label="${w.en} を きく">
+        <span class="pic">${pic(w, true)}</span>
+        <span class="word">${hl(w.en, w.en[0])}</span>
+        ${state.showJa ? `<span class="ja-word">${w.ja}</span>` : ''}
+      </button>
+      <div class="card-ctrl">
+        <button class="round chunky" data-act="step" data-arg="-1" aria-label="まえの カード">◀</button>
+        <button class="round speak chunky" data-act="say" aria-label="もういちど きく">🔊</button>
+        <button class="round chunky" data-act="step" data-arg="1" aria-label="つぎの カード">▶</button>
+      </div>
+      <p class="count">${view.i + 1} / ${c.words.length}</p>
+      ${last ? `<button class="pill chunky" data-act="quizFromCards">この ことばで クイズ!</button>` : ''}
+    </div>`;
+  },
+
+  quiz() {
+    const q = view.round[view.i];
+    return `<div class="quiz">
+      ${progress(view.round.length, view.i)}
+      <button class="listen chunky" data-act="qsay"><span class="l-ico" aria-hidden="true">🔊</span>きいて、タッチ!</button>
+      <div class="opts n${q.options.length}">${q.options.map((w, k) =>
+        `<button class="opt chunky" data-act="pick" data-arg="${k}" aria-label="${w.ja}">${pic(w)}</button>`).join('')}</div>
+    </div>`;
+  },
+
+  abc() {
+    const L = ABC[view.sel];
+    return `<div class="abc">
+      <button class="abc-show chunky" data-act="abcsay" aria-label="${L.u} を きく">
+        <span class="abc-big">${L.u}<small>${L.l}</small></span>
+        <span class="abc-pic"><span class="emoji">${L.e}</span><span class="abc-word">${hl(L.w, L.l)}</span></span>
+      </button>
+      <div class="abc-grid">${ABC.map((x, k) =>
+        `<button class="abc-key chunky ${k === view.sel ? 'on' : ''}" data-act="abc" data-arg="${k}" aria-pressed="${k === view.sel}">${x.u}</button>`).join('')}</div>
+    </div>`;
+  },
+
+  spell() {
+    const v = view, w = v.words[v.i], ans = w.en;
+    return `<div class="spell">
+      ${progress(v.words.length, v.i)}
+      <div class="spell-top"><span class="pic">${pic(w, true)}</span>
+        <button class="round speak chunky" data-act="ssay" aria-label="ことばを きく">🔊</button></div>
+      <div class="slots ${v.shake ? 'shake' : ''}">${[...ans].map((ch, j) => {
+        const t = v.filled[j];
+        return `<button class="slot ${t != null ? 'full' : ''} ${v.done ? 'ok' : ''}" data-act="unslot" data-arg="${j}" ${t == null || v.done ? 'disabled' : ''} aria-label="${j + 1}もじめ">${
+          t != null ? v.tiles[t].ch : (state.level === 1 ? `<span class="ghost">${ch}</span>` : '')}</button>`;
+      }).join('')}</div>
+      <div class="tiles">${v.tiles.map((t, k) =>
+        `<button class="tile chunky" data-act="tile" data-arg="${k}" ${t.used || v.done ? 'disabled' : ''}>${t.ch}</button>`).join('')}</div>
+      <div class="row">${v.done
+        ? `<button class="pill chunky" data-act="snext">つぎへ ▶</button>`
+        : `<button class="pill alt chunky" data-act="sback" ${v.filled.length ? '' : 'disabled'}>⌫ ひとつ けす</button>`}</div>
+    </div>`;
+  },
+
+  result() {
+    const v = view;
+    return `<section class="result chunky">
+      <p class="big">${v.perfect ? 'Perfect!' : 'Good job!'}</p>
+      <div class="earned" aria-label="ほし ${v.earned}こ">${'⭐'.repeat(v.earned)}</div>
+      <p>${v.perfect ? 'ぜんぶ せいかい!すごいね!' : 'よく がんばったね!'}</p>
+      <p>ほしを <b>${v.earned}</b>こ もらったよ</p>
+      <div class="row">
+        <button class="pill chunky" data-act="again">もういちど</button>
+        <button class="pill alt chunky" data-act="home">おしまい</button>
+      </div>
+    </section>`;
+  },
+
+  stickers() {
+    const got = Math.min(Math.floor(state.stars / 5), STICKERS.length);
+    return `<p class="stk-note">⭐ 5こで シールが 1まい もらえるよ。いま ${got} / ${STICKERS.length} まい</p>
+      <div class="stickers">${STICKERS.map((s, k) => k < got
+        ? `<span class="sticker chunky" role="img" aria-label="シール">${s}</span>`
+        : `<span class="sticker locked" aria-label="まだ">?</span>`).join('')}</div>`;
+  },
+
+  parent() {
+    const seg = (act, cur, opts) => `<div class="seg">${opts.map(([val, label]) =>
+      `<button data-act="${act}" data-arg="${val}" aria-pressed="${String(cur) === String(val)}">${label}</button>`).join('')}</div>`;
+    return `<section class="panel chunky">
+        <h2>おうちの方へ</h2>
+        <ul>
+          <li>英語の音声はアプリに入っているので、インターネットや端末の読み上げ設定がなくても再生できます。音が出ないときは、端末の音量を確認してください。</li>
+          <li>「ことばカード」で聞いて、まねして言ってみてから「きいてタッチ」で確かめる流れがおすすめです。</li>
+          <li>1回10分くらいを目安に、いっしょに声に出して楽しんでください。</li>
+          <li>ほし・シールの記録は、この端末のブラウザに保存されます。</li>
+        </ul>
+      </section>
+      <section class="panel chunky">
+        <h3>レベル</h3>
+        ${seg('level', state.level, [[1, '4〜5さい'], [2, 'しょうがくせい']])}
+        <p class="note">4〜5さい:クイズの絵は3まい、もじならべはお手本つき。しょうがくせい:絵は4まい、お手本なしで、まぎらわしい文字が1つまざります。</p>
+        <h3>よみあげの はやさ</h3>
+        ${seg('rate', state.rate, [[0.7, 'ゆっくり'], [0.8, 'すこし ゆっくり'], [0.95, 'ふつう']])}
+        <h3>にほんごの いみを ひょうじ</h3>
+        ${seg('ja', state.showJa ? 1 : 0, [[1, 'ひょうじする'], [0, 'かくす']])}
+        <h3>きろくを けす</h3>
+        <div class="seg">${view.confirmReset
+          ? `<button class="danger" data-act="resetYes">ほし・シールを けす</button><button data-act="resetNo">やめる</button>`
+          : `<button data-act="resetAsk">けす…</button>`}</div>
+      </section>`;
+  }
+};
+
+/* ---------- game logic ---------- */
+function sayCard() {
+  const c = CAT[view.cat], w = c.words[view.i];
+  state.learned[c.id + ':' + w.en] = 1; save();
+  Speech.say(w.en);
+}
+function sayQuestion() {
+  const q = view.round[view.i];
+  Speech.sayAll([CAT[view.cat].q(q.answer), q.answer.en]);
+}
+function startQuiz(catId) {
+  const c = CAT[catId], n = state.level === 1 ? 3 : 4, len = state.level === 1 ? 5 : 8;
+  const round = sample(c.words, Math.min(len, c.words.length)).map(answer => ({
+    answer, options: shuffle([answer, ...sample(c.words.filter(w => w !== answer), n - 1)])
+  }));
+  go('quiz', { cat: catId, round, i: 0, earned: 0, firstTry: true, locked: false });
+  sayQuestion();
+}
+function sayABC() {
+  const L = ABC[view.sel];
+  Speech.sayAll(['#' + L.l, abcLine(L)]);
+}
+function startSpell() {
+  const max = state.level === 1 ? 4 : 5, seen = new Set();
+  const pool = CATS.flatMap(c => c.words).filter(w => /^[a-z]+$/.test(w.en) && w.en.length >= 3 && w.en.length <= max && !seen.has(w.en) && seen.add(w.en));
+  view = { name: 'spell', words: sample(pool, 5), i: 0, earned: 0 };
+  setupSpellWord(); render(); window.scrollTo(0, 0);
+  Speech.say(view.words[0].en);
+}
+function setupSpellWord() {
+  const ans = view.words[view.i].en, letters = [...ans];
+  if (state.level > 1) {
+    const extra = [...'abcdefghijklmnoprstuwy'].filter(ch => !ans.includes(ch));
+    letters.push(rnd(extra));
+  }
+  let s = shuffle(letters), tries = 0;
+  while (s.join('').startsWith(ans) && tries++ < 10) s = shuffle(letters);
+  Object.assign(view, { tiles: s.map(ch => ({ ch, used: false })), filled: [], done: false, firstTry: true, shake: false, checking: false });
+}
+function finish(mode) {
+  const v = view, total = mode === 'quiz' ? v.round.length : v.words.length;
+  let earned = v.earned;
+  if (earned === 0) { addStars(1); earned = 1; } // がんばった ほし
+  go('result', { earned, perfect: v.earned === total, replay: { mode, cat: v.cat } });
+  sfx.fanfare();
+  Speech.say(view.perfect ? 'Perfect! Great job!' : 'Good job!');
+}
+
+const ACTS = {
+  home: () => go('home'),
+  go: arg => go(arg),
+  mode(arg) {
+    if (arg === 'cards' || arg === 'quiz') go('pick', { next: arg });
+    else if (arg === 'abc') { go('abc', { sel: 0 }); sayABC(); }
+    else if (arg === 'spell') startSpell();
+    else go(arg);
+  },
+  cat(arg) {
+    if (view.next === 'cards') { go('cards', { cat: arg, i: 0 }); sayCard(); }
+    else startQuiz(arg);
+  },
+  say: () => sayCard(),
+  step(arg) {
+    const len = CAT[view.cat].words.length;
+    view.i = (view.i + Number(arg) + len) % len; render(); sayCard();
+  },
+  quizFromCards: () => startQuiz(view.cat),
+  qsay: () => sayQuestion(),
+  pick(arg, btn) {
+    const v = view; if (v.locked) return;
+    const q = v.round[v.i], w = q.options[Number(arg)];
+    if (w === q.answer) {
+      v.locked = true; btn.classList.add('correct'); sfx.good(); burst(btn);
+      if (v.firstTry) { v.earned++; addStars(1); }
+      Speech.sayAll([w.en, rnd(PRAISE)]);
+      setTimeout(() => {
+        if (view !== v) return;
+        v.i++; v.firstTry = true; v.locked = false;
+        if (v.i >= v.round.length) finish('quiz'); else { render(); sayQuestion(); }
+      }, 1700);
+    } else {
+      btn.classList.add('wrong'); btn.disabled = true; v.firstTry = false; sfx.bad();
+      Speech.sayAll(['Try again!', CAT[v.cat].q(q.answer)]);
+    }
+  },
+  again() { const r = view.replay; r.mode === 'quiz' ? startQuiz(r.cat) : startSpell(); },
+  abc(arg) { view.sel = Number(arg); render(); sayABC(); },
+  abcsay: () => sayABC(),
+  ssay: () => Speech.say(view.words[view.i].en),
+  tile(arg) {
+    const v = view; if (v.done || v.checking) return;
+    const t = v.tiles[Number(arg)]; if (t.used) return;
+    t.used = true; v.filled.push(Number(arg));
+    const ans = v.words[v.i].en;
+    if (v.filled.length < ans.length) { render(); Speech.say('#' + t.ch); return; }
+    if (v.filled.map(k => v.tiles[k].ch).join('') === ans) {
+      v.done = true; sfx.good();
+      if (v.firstTry) { v.earned++; addStars(1); }
+      render(); burst($('.slots'));
+      Speech.sayAll([...[...ans].map(ch => '#' + ch), ans, rnd(PRAISE)]);
+    } else {
+      v.firstTry = false; v.shake = true; v.checking = true; sfx.bad(); render();
+      setTimeout(() => {
+        if (view !== v) return;
+        let m = 0; while (v.tiles[v.filled[m]].ch === ans[m]) m++;
+        v.filled.slice(m).forEach(k => { v.tiles[k].used = false; });
+        v.filled = v.filled.slice(0, m); v.shake = false; v.checking = false;
+        render(); Speech.say(ans);
+      }, 700);
+    }
+  },
+  unslot(arg) {
+    const v = view; if (v.done || v.checking) return;
+    const j = Number(arg);
+    v.filled.slice(j).forEach(k => { v.tiles[k].used = false; });
+    v.filled = v.filled.slice(0, j); render();
+  },
+  sback() { const v = view; if (v.done || v.checking || !v.filled.length) return; v.tiles[v.filled.pop()].used = false; render(); },
+  snext() {
+    const v = view; v.i++;
+    if (v.i >= v.words.length) finish('spell');
+    else { setupSpellWord(); render(); Speech.say(v.words[v.i].en); }
+  },
+  level(arg) { state.level = Number(arg); save(); render(); },
+  rate(arg) { state.rate = Number(arg); save(); render(); Speech.say('Hello! Let’s play!'); },
+  ja(arg) { state.showJa = arg === '1'; save(); render(); },
+  resetAsk() { view.confirmReset = true; render(); },
+  resetNo() { view.confirmReset = false; render(); },
+  resetYes() { state.stars = 0; state.learned = {}; save(); view.confirmReset = false; render(); toast('きろくを けしました'); }
+};
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
+  sfx.ctx();
+  const fn = ACTS[b.dataset.act]; if (fn) fn(b.dataset.arg, b);
+});
+document.addEventListener('keydown', e => {
+  if (view.name !== 'cards') return;
+  if (e.key === 'ArrowRight') ACTS.step(1);
+  if (e.key === 'ArrowLeft') ACTS.step(-1);
+});
+
+render();
+</script>
