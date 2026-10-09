@@ -29,7 +29,7 @@ for (const text of phrases()) {
 }
 
 const body = Object.entries(clips).map(([k, v]) => `${JSON.stringify(k)}:"${v}"`).join(',\n');
-// GitHub Pages 用に doctype をつける(Artifact 版は src を直接使わず、この index.html から先頭行を除いて公開する)
+// 単体のページとして開けるよう doctype をつける
 fs.writeFileSync(path.join(root, 'index.html'), '<!doctype html>\n<html lang="ja">\n' + src.replace('/*CLIPS*/', '\n' + body + '\n'));
 const kb = Math.round(fs.statSync(path.join(root, 'index.html')).size / 1024);
 console.log(`index.html: ${Object.keys(clips).length} clips, ${kb} KB`);
