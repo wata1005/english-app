@@ -77,10 +77,11 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
 }
 .brand { font-weight: 700; font-size: 1.3rem; letter-spacing: .02em; flex: 1; }
 .brand b { color: var(--tomato); }
-.bar-title { flex: 1; text-align: center; font-weight: 600; font-size: 1.15rem; font-family: var(--font-ja); }
+.bar-title { flex: 1; min-width: 0; text-align: center; font-weight: 600; font-size: 1.15rem; font-family: var(--font-ja); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bar-btn { width: 56px; height: 56px; font-size: 1.6rem; display: grid; place-items: center; }
 .stars { display: flex; align-items: center; gap: 6px; height: 56px; padding-inline: 16px; font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .stars.bump { animation: pop .45s; }
+.bar .stars + .stars { padding-inline: 14px; }
 
 /* home */
 .hello { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; }
@@ -255,6 +256,46 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
 @keyframes bob { 50% { transform: translateY(-8px); } }
 @keyframes hop { 50% { transform: translateY(-30px) scale(1.06); } }
 
+/* dress-up figure: accessories are placed in % of the pet emoji box */
+.figure { position: relative; display: inline-block; line-height: 1; }
+.figure .f-body { display: block; }
+.figure .acc { position: absolute; left: 50%; transform: translateX(-50%); line-height: 1; pointer-events: none; }
+.figure .acc-head { top: -30%; font-size: .5em; }
+.figure .acc-face { top: 26%; font-size: .42em; }
+.figure .acc-hand { top: auto; bottom: 0; left: auto; right: -24%; transform: rotate(-12deg); font-size: .46em; }
+
+/* scenes (backgrounds bought in the shop) — fixed illustration colors, same in both themes */
+.pet-stage { position: relative; overflow: hidden; }
+.pet-stage > * { position: relative; z-index: 1; }
+.pet-stage[data-bg]::before, .pet-stage[data-bg]::after { position: absolute; pointer-events: none; line-height: 1; }
+.pet-stage[data-bg]::before { content: attr(data-d1); left: 14px; bottom: 12px; font-size: 3.2rem; }
+.pet-stage[data-bg]::after { content: attr(data-d2); right: 16px; top: 14px; font-size: 2.4rem; }
+.pet-stage[data-bg="park"] { background: linear-gradient(#BFE7FF 0 64%, #8FD47A 64%); }
+.pet-stage[data-bg="beach"] { background: linear-gradient(#A6DDFF 0 52%, #4FB7E8 52% 68%, #F3DCA0 68%); }
+.pet-stage[data-bg="snow"] { background: linear-gradient(#CFE4FF, #FFFFFF 72%); }
+.pet-stage[data-bg="space"] { background: radial-gradient(circle at 30% 20%, #4B3C9A, #171B45 70%); }
+.pet-stage[data-bg="castle"] { background: linear-gradient(#FFD3EA, #C8B6FF); }
+.pet-name { background: var(--card); padding: 4px 16px; border-radius: 99px; }
+
+/* closet */
+.closet { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.tab { padding: 10px 18px; border-radius: 99px; background: var(--card); box-shadow: inset 0 0 0 2px var(--line); font-family: var(--font-ja); }
+.tab[aria-selected="true"] { background: var(--sun); color: var(--on-accent); box-shadow: none; }
+.items { width: 100%; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 12px; }
+.item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 6px 10px; border-radius: 20px; }
+.item .i-e { font-size: 2.6rem; line-height: 1.15; }
+.item .i-p { font-size: .9rem; font-weight: 600; font-variant-numeric: tabular-nums; font-family: var(--font-ja); }
+.item.owned .i-p { color: var(--leaf); }
+.item.sel { box-shadow: 0 6px 0 var(--lift), inset 0 0 0 4px var(--ocean); }
+.item.wearing { background: var(--good-soft); }
+.item-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 20px; min-height: 64px; text-align: center; }
+.item-name { font-size: 2rem; font-weight: 600; line-height: 1.1; }
+.item-name small { display: block; font-family: var(--font-ja); font-size: .9rem; font-weight: 400; color: var(--ink-soft); }
+.hint { margin: 0; font-family: var(--font-ja); color: var(--ink-soft); }
+.pill:disabled { opacity: .5; cursor: default; }
+.coin-line { font-weight: 600; font-size: 1.3rem; }
+
 /* toast + sparks */
 .toast {
   position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
@@ -321,7 +362,7 @@ const ABC = [
 const STICKERS = ['🦄','🐳','🦖','🌈','🍩','🚒','🐙','🌻','🦋','🍉','🐧','⚽','🎈','🐞','🍭','🦒','🚁','🐬','🌟','👑'];
 const PRAISE = ['Great!', 'Good job!', 'Excellent!', 'Wonderful!', "That's right!", 'Super!'];
 const EXTRA = ['Try again!', 'Perfect! Great job!', 'Good job!', "Hello! Let's play!", 'Oops! Try again!',
-  'Hello!', 'I love you!', 'Yummy! Thank you!', 'No, thank you.', "I'm full! See you tomorrow!"];
+  'Hello!', 'I love you!', 'Yummy! Thank you!', 'No, thank you.', "I'm full! See you tomorrow!", 'Thank you!', 'You look great!'];
 const abcLine = L => `${L.u} is for ${L.w}.`;
 
 // ふうせんわり: 絵で見分けられる ことば
@@ -333,6 +374,29 @@ const PET_STAGES = [
   { at: 35, e: '🐦', ja: 'ことり' }, { at: 60, e: '🦜', ja: 'おしゃべりインコ' }
 ];
 const wantLine = w => `I want ${w.art || 'a'} ${w.en}!`;
+// きせかえ: コインで かう。名前は英語で読み上げる
+const SLOTS = [{ id: 'head', ja: 'あたま' }, { id: 'face', ja: 'かお' }, { id: 'hand', ja: 'もちもの' }, { id: 'bg', ja: 'ばしょ' }];
+const ITEMS = [
+  { id: 'cap', slot: 'head', e: '🧢', en: 'cap', ja: 'ぼうし', price: 10 },
+  { id: 'ribbon', slot: 'head', e: '🎀', en: 'ribbon', ja: 'リボン', price: 15 },
+  { id: 'flower', slot: 'head', e: '🌸', en: 'flower', ja: 'おはな', price: 15 },
+  { id: 'hat', slot: 'head', e: '🎩', en: 'hat', ja: 'シルクハット', price: 30 },
+  { id: 'crown', slot: 'head', e: '👑', en: 'crown', ja: 'おうかん', price: 60 },
+  { id: 'glasses', slot: 'face', e: '👓', en: 'glasses', ja: 'めがね', price: 20 },
+  { id: 'goggles', slot: 'face', e: '🥽', en: 'goggles', ja: 'ゴーグル', price: 25 },
+  { id: 'sunglasses', slot: 'face', e: '🕶️', en: 'sunglasses', ja: 'サングラス', price: 35 },
+  { id: 'balloon', slot: 'hand', e: '🎈', en: 'balloon', ja: 'ふうせん', price: 10 },
+  { id: 'lollipop', slot: 'hand', e: '🍭', en: 'lollipop', ja: 'ペロペロキャンディ', price: 15 },
+  { id: 'umbrella', slot: 'hand', e: '☂️', en: 'umbrella', ja: 'かさ', price: 25 },
+  { id: 'wand', slot: 'hand', e: '🪄', en: 'magic wand', ja: 'まほうの つえ', price: 40 },
+  { id: 'trophy', slot: 'hand', e: '🏆', en: 'trophy', ja: 'トロフィー', price: 80 },
+  { id: 'park', slot: 'bg', e: '🌳', en: 'park', ja: 'こうえん', price: 20, d: ['🌳', '🌷'] },
+  { id: 'beach', slot: 'bg', e: '🏖️', en: 'beach', ja: 'うみ', price: 30, d: ['⛱️', '🐚'] },
+  { id: 'snow', slot: 'bg', e: '⛄', en: 'snow', ja: 'ゆき', price: 40, d: ['⛄', '❄️'] },
+  { id: 'space', slot: 'bg', e: '🪐', en: 'space', ja: 'うちゅう', price: 50, d: ['🪐', '✨'] },
+  { id: 'castle', slot: 'bg', e: '🏰', en: 'castle', ja: 'おしろ', price: 60, d: ['🏰', '🌈'] },
+];
+const ITEM = Object.fromEntries(ITEMS.map(it => [it.id, it]));
 
 // 録音ずみ音声のキー。'#a' は文字の読み方(エー)
 const clipKey = t => t[0] === '#' ? 'L_' + t[1] : t.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -343,6 +407,7 @@ function phrases() {
   ABC.forEach(L => { out.add(L.w); out.add(abcLine(L)); });
   BALLOON_WORDS.forEach(w => out.add(popLine(w)));
   CAT.food.words.forEach(w => out.add(wantLine(w)));
+  ITEMS.forEach(it => out.add(it.en));
   [...PRAISE, ...EXTRA].forEach(p => out.add(p));
   'abcdefghijklmnopqrstuvwxyz'.split('').forEach(ch => out.add('#' + ch));
   return [...out];
@@ -360,7 +425,8 @@ const hl = (word, letter) => { const k = word.indexOf(letter); return k < 0 ? wo
 /* ---------- storage ---------- */
 const KEY = 'eigo-asobi-v1';
 const state = (() => {
-  const d = { stars: 0, level: 1, rate: 0.8, showJa: true, learned: {}, pet: { day: '', meals: 0, hearts: 0 } };
+  const d = { stars: 0, level: 1, rate: 0.8, showJa: true, learned: {}, pet: { day: '', meals: 0, hearts: 0 },
+    coins: 10, owned: {}, wear: { head: null, face: null, hand: null, bg: null } };
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) return { ...d, ...s }; } catch (e) {}
   return d;
 })();
@@ -503,12 +569,18 @@ function pic(w, big) {
   if (w.n) return `<span class="numpic">${big ? `<span class="digit">${w.n}</span>` : ''}<span class="dots">${'<i></i>'.repeat(w.n)}</span></span>`;
   return `<span class="emoji">${w.e}</span>`;
 }
+// ペットの すがた(きせかえ つき)。wear を わたすと ためしぎ できる
+function figure(wear = state.wear) {
+  const acc = ['head', 'face', 'hand'].map(sl => wear[sl] ? `<span class="acc acc-${sl}">${ITEM[wear[sl]].e}</span>` : '').join('');
+  return `<span class="figure"><span class="f-body">${PET_STAGES[petStage()].e}</span>${acc}</span>`;
+}
+const sceneAttrs = id => { const b = id && ITEM[id]; return b ? `data-bg="${b.id}" data-d1="${b.d[0]}" data-d2="${b.d[1]}"` : ''; };
 const progress = (n, i) => `<div class="progress" aria-label="${i + 1} / ${n}">${Array.from({ length: n }, (_, k) => `<i class="${k < i ? 'done' : k === i ? 'now' : ''}"></i>`).join('')}</div>`;
 
 /* ---------- views ---------- */
 const app = $('#app');
 let view = { name: 'home' };
-const TITLES = { balloon: 'ふうせんわり', pet: 'ペット', pick: 'どれに する?', cards: 'ことば カード', quiz: 'きいて タッチ', abc: 'ABC', spell: 'もじ ならべ', result: 'できたね!', stickers: 'シール ちょう', parent: 'おうちの かたへ' };
+const TITLES = { closet: 'きせかえ', balloon: 'ふうせんわり', pet: 'ペット', pick: 'どれに する?', cards: 'ことば カード', quiz: 'きいて タッチ', abc: 'ABC', spell: 'もじ ならべ', result: 'できたね!', stickers: 'シール ちょう', parent: 'おうちの かたへ' };
 
 function go(name, params = {}) { view = { name, ...params }; render(); window.scrollTo(0, 0); }
 
@@ -518,6 +590,7 @@ function render() {
     <header class="bar">
       ${home ? `<span class="brand">えいご<b>あそび</b>ランド</span>` : `<button class="bar-btn chunky" data-act="home" aria-label="ホームへ もどる">🏠</button><span class="bar-title">${TITLES[view.name] || ''}</span>`}
       <button class="stars chunky" data-act="go" data-arg="stickers" aria-label="あつめた ほし ${state.stars}こ"><span aria-hidden="true">⭐</span><b id="starCount">${state.stars}</b></button>
+      <button class="stars chunky" data-act="closet" aria-label="コイン ${state.coins}まい。きせかえへ"><span aria-hidden="true">🪙</span><b>${state.coins}</b></button>
     </header>
     <main>${VIEWS[view.name]()}</main>`;
 }
@@ -539,7 +612,7 @@ const VIEWS = {
           </div>
         </div>
         <button class="home-pet" data-act="pet" aria-label="ペットに あいに いく">
-          <span class="hp-e" aria-hidden="true">${pet.e}</span>
+          <span class="hp-e" aria-hidden="true">${figure()}</span>
           <span class="hp-b">${petStage() === 0 ? 'あたためてね' : mealsLeft() ? 'おなか すいた〜' : 'げんき いっぱい!'}<br><small>${pet.ja}</small></span>
         </button>
       </section>
@@ -630,6 +703,7 @@ const VIEWS = {
       <div class="earned" aria-label="ほし ${v.earned}こ">${'⭐'.repeat(v.earned)}</div>
       <p>${v.perfect ? 'ぜんぶ せいかい!すごいね!' : 'よく がんばったね!'}</p>
       <p>ほしを <b>${v.earned}</b>こ もらったよ</p>
+      <p class="coin-line">🪙 +${v.coins} <span class="ja">コイン</span></p>
       <div class="row">
         <button class="pill chunky" data-act="again">もういちど</button>
         <button class="pill alt chunky" data-act="home">おしまい</button>
@@ -669,14 +743,45 @@ const VIEWS = {
       body = `<p class="pet-msg">きょうの ごはんは おしまい。また あした あげてね</p>`;
     }
     return `<div class="pet">
-      <div class="pet-stage chunky">
+      <div class="pet-stage chunky" ${sceneAttrs(state.wear.bg)}>
         <p class="bubble ja">${bubble}</p>
-        <button class="pet-body ${v.happy ? 'happy' : ''}" data-act="petTap" aria-label="${P.ja}">${P.e}</button>
+        <button class="pet-body ${v.happy ? 'happy' : ''}" data-act="petTap" aria-label="${P.ja}">${figure()}</button>
         <p class="pet-name"><span>${P.ja}</span><span class="hearts" aria-label="なかよし ${state.pet.hearts}">❤️ ${state.pet.hearts}</span></p>
       </div>
+      <button class="pill alt chunky" data-act="closet">👕 きせかえ ・ おみせ(🪙${state.coins})</button>
       ${body}
       <ol class="growth" aria-label="そだちかた">${PET_STAGES.map((p, k) =>
         `<li class="${k <= st ? 'got' : ''} ${k === st ? 'now' : ''}"><span class="g-e">${k <= st ? p.e : '?'}</span><span class="g-at">⭐${p.at}</span></li>`).join('')}</ol>
+    </div>`;
+  },
+
+  closet() {
+    const v = view, sel = v.sel && ITEM[v.sel];
+    const wear = sel ? { ...state.wear, [sel.slot]: sel.id } : state.wear;
+    let bar;
+    if (!sel) bar = `<p class="hint">タップすると ためしに きてみられるよ</p>`;
+    else {
+      const owned = state.owned[sel.id], worn = state.wear[sel.slot] === sel.id, short = sel.price - state.coins;
+      const btn = !owned
+        ? (short > 0 ? `<button class="pill chunky" disabled>あと 🪙${short} たりない</button>`
+                     : `<button class="pill chunky" data-act="buy">🪙${sel.price} で かう</button>`)
+        : worn ? `<button class="pill alt chunky" data-act="unwear">はずす</button>`
+               : `<button class="pill chunky" data-act="wear">${sel.slot === 'bg' ? 'ここに する' : 'つける'}</button>`;
+      bar = `<button class="item-name" data-act="itemSay">${sel.en}<small>${sel.ja}</small></button>${btn}`;
+    }
+    return `<div class="closet">
+      <div class="pet-stage chunky" ${sceneAttrs(wear.bg)}>
+        <span class="pet-body">${figure(wear)}</span>
+        <p class="pet-name"><span>${PET_STAGES[petStage()].ja}</span><span class="hearts">🪙 ${state.coins}</span></p>
+      </div>
+      <div class="tabs" role="tablist">${SLOTS.map(sl =>
+        `<button class="tab" role="tab" aria-selected="${sl.id === v.slot}" data-act="slot" data-arg="${sl.id}">${sl.ja}</button>`).join('')}</div>
+      <div class="item-bar">${bar}</div>
+      <div class="items">${ITEMS.filter(it => it.slot === v.slot).map(it => {
+        const owned = state.owned[it.id], worn = state.wear[it.slot] === it.id;
+        return `<button class="item chunky ${owned ? 'owned' : ''} ${worn ? 'wearing' : ''} ${it.id === v.sel ? 'sel' : ''}" data-act="item" data-arg="${it.id}" aria-label="${it.ja}">
+          <span class="i-e">${it.e}</span><span class="i-p">${worn ? 'つけてる' : owned ? '✓ もってる' : '🪙' + it.price}</span></button>`;
+      }).join('')}</div>
     </div>`;
   },
 
@@ -698,6 +803,7 @@ const VIEWS = {
           <li>「ことばカード」で聞いて、まねして言ってみてから「きいてタッチ」で確かめる流れがおすすめです。</li>
           <li>1回10分くらいを目安に、いっしょに声に出して楽しんでください。</li>
           <li>ペットは⭐が5こで生まれ、⭐が増えるほど育ちます。ごはんは1日3回まで。毎日少しずつ続けるきっかけにどうぞ。</li>
+          <li>クイズ・ふうせんわり・もじならべをクリアするとコインがもらえ、きせかえのお店で使えます(本物のお金はかかりません)。アイテムの名前は英語で聞けます。</li>
           <li>ほし・シールの記録は、この端末のブラウザに保存されます。</li>
         </ul>
       </section>
@@ -711,7 +817,7 @@ const VIEWS = {
         ${seg('ja', state.showJa ? 1 : 0, [[1, 'ひょうじする'], [0, 'かくす']])}
         <h3>きろくを けす</h3>
         <div class="seg">${view.confirmReset
-          ? `<button class="danger" data-act="resetYes">ほし・シールを けす</button><button data-act="resetNo">やめる</button>`
+          ? `<button class="danger" data-act="resetYes">ほし・コイン・ペットを けす</button><button data-act="resetNo">やめる</button>`
           : `<button data-act="resetAsk">けす…</button>`}</div>
       </section>`;
   }
@@ -823,7 +929,9 @@ function finish(mode) {
   const v = view, total = mode === 'quiz' ? v.round.length : v.words.length;
   let earned = v.earned;
   if (earned === 0) { addStars(1); earned = 1; } // がんばった ほし
-  go('result', { earned, perfect: v.earned === total, replay: { mode, cat: v.cat } });
+  const coins = v.earned + 3 + (v.earned === total ? 5 : 0); // せいかいの かず + クリア 3 + ぜんぶ せいかい 5
+  state.coins += coins; save();
+  go('result', { earned, coins, perfect: v.earned === total, replay: { mode, cat: v.cat } });
   sfx.fanfare();
   Speech.say(view.perfect ? 'Perfect! Great job!' : 'Good job!');
 }
@@ -891,6 +999,19 @@ const ACTS = {
     }
   },
   pet: () => openPet(),
+  closet: () => go('closet', { slot: 'head', sel: null }),
+  slot(arg) { view.slot = arg; view.sel = null; render(); },
+  item(arg) { view.sel = arg; render(); Speech.say(ITEM[arg].en); },
+  itemSay: () => Speech.say(ITEM[view.sel].en),
+  buy() {
+    const it = ITEM[view.sel];
+    if (state.owned[it.id] || state.coins < it.price) return;
+    state.coins -= it.price; state.owned[it.id] = 1; state.wear[it.slot] = it.id; save();
+    sfx.fanfare(); render(); burst($('.closet .figure'));
+    Speech.sayAll(['Thank you!', 'You look great!']);
+  },
+  wear() { const it = ITEM[view.sel]; state.wear[it.slot] = it.id; save(); render(); sfx.good(); Speech.say('You look great!'); },
+  unwear() { const it = ITEM[view.sel]; state.wear[it.slot] = null; save(); view.sel = null; render(); },
   petSay: () => Speech.say(wantLine(view.want)),
   petNext() { setupMeal(); render(); Speech.say(wantLine(view.want)); },
   petTap(arg, el) {
@@ -903,7 +1024,7 @@ const ACTS = {
     if (v.fed) return;
     if (w === v.want) {
       if (state.pet.day !== today()) { state.pet.day = today(); state.pet.meals = 0; }
-      state.pet.meals++; state.pet.hearts++; save();
+      state.pet.meals++; state.pet.hearts++; state.coins += 2; save();
       v.fed = true; v.happy = true; sfx.good();
       if (v.firstTry) addStars(1);
       render(); burst($('.pet-body'));
@@ -955,7 +1076,7 @@ const ACTS = {
   ja(arg) { state.showJa = arg === '1'; save(); render(); },
   resetAsk() { view.confirmReset = true; render(); },
   resetNo() { view.confirmReset = false; render(); },
-  resetYes() { state.stars = 0; state.learned = {}; save(); view.confirmReset = false; render(); toast('きろくを けしました'); }
+  resetYes() { Object.assign(state, { stars: 0, learned: {}, coins: 10, owned: {}, wear: { head: null, face: null, hand: null, bg: null }, pet: { day: '', meals: 0, hearts: 0 } }); save(); view.confirmReset = false; render(); toast('きろくを けしました'); }
 };
 
 document.addEventListener('pointerdown', e => {
