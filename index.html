@@ -90,7 +90,7 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
 .hello { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; }
 .hello-main { flex: 1 1 240px; min-width: 0; }
 .home-pet { display: flex; align-items: center; gap: 8px; padding: 8px 18px 8px 10px; border-radius: 22px; background: var(--sky); box-shadow: inset 0 0 0 2px var(--line); }
-.home-pet .hp-e { font-size: 3.4rem; line-height: 1; animation: bob 2.4s ease-in-out infinite; }
+.home-pet .hp-e { width: 64px; animation: bob 2.4s ease-in-out infinite; }
 .home-pet .hp-b { font-family: var(--font-ja); font-size: .95rem; text-align: left; line-height: 1.35; }
 .home-pet .hp-b small { color: var(--ink-soft); font-size: .8rem; }
 .hello-en { font-size: 2.6rem; font-weight: 700; margin: 0; line-height: 1.1; color: var(--tomato); }
@@ -246,7 +246,7 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
 .pet { display: flex; flex-direction: column; align-items: center; gap: 20px; }
 .pet-stage { width: min(100%, 440px); padding: 22px 20px 18px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .bubble { margin: 0; position: relative; background: var(--sky); padding: 8px 20px; border-radius: 18px; font-size: 1.15rem; box-shadow: inset 0 0 0 2px var(--line); }
-.pet-body { font-size: 8rem; line-height: 1.15; animation: bob 2.4s ease-in-out infinite; }
+.pet-body { display: block; width: min(230px, 62vw); animation: bob 2.4s ease-in-out infinite; }
 .pet-body.happy { animation: hop .5s 2; }
 .pet-body.wobble { animation: shake .5s; }
 .pet-name { margin: 0; display: flex; gap: 14px; align-items: center; font-family: var(--font-ja); }
@@ -256,8 +256,8 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
 .growth { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .growth li { width: 66px; padding: 8px 0 6px; border-radius: 16px; background: var(--card); box-shadow: inset 0 0 0 2px var(--line); display: flex; flex-direction: column; align-items: center; }
 .growth li.now { background: var(--sun); color: var(--on-accent); box-shadow: none; }
-.growth .g-e { font-size: 1.8rem; line-height: 1.2; }
-.growth li:not(.got) .g-e { font-size: 1.3rem; font-weight: 600; color: var(--ink-soft); line-height: 1.66; }
+.growth .g-e { width: 40px; font-size: 1.8rem; line-height: 1.2; }
+.growth li:not(.got) .g-e { font-size: 1.3rem; font-weight: 600; color: var(--ink-soft); line-height: 1.66; text-align: center; }
 .growth .g-at { font-size: .8rem; font-variant-numeric: tabular-nums; }
 @keyframes bob { 50% { transform: translateY(-8px); } }
 @keyframes hop { 50% { transform: translateY(-30px) scale(1.06); } }
@@ -327,13 +327,10 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
 .mic.on { animation: ring 1.2s ease-out infinite; }
 @keyframes ring { 0% { box-shadow: 0 0 0 0 var(--tomato); } 100% { box-shadow: 0 0 0 26px transparent; } }
 
-/* dress-up figure: accessories are placed in % of the pet emoji box */
-.figure { position: relative; display: inline-block; line-height: 1; }
-.figure .f-body { display: block; }
-.figure .acc { position: absolute; left: 50%; transform: translateX(-50%); line-height: 1; pointer-events: none; }
-.figure .acc-head { top: -30%; font-size: .5em; }
-.figure .acc-face { top: 26%; font-size: .42em; }
-.figure .acc-hand { top: auto; bottom: 0; left: auto; right: -24%; transform: rotate(-12deg); font-size: .46em; }
+/* dress-up figure: hand-drawn SVG pet; accessories are anchored to its head, eyes and wing */
+.figure { display: block; width: 100%; height: auto; overflow: visible; }
+.figure .eyes { animation: blink 5s infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes blink { 0%, 95%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
 
 /* scenes (backgrounds bought in the shop) — fixed illustration colors, same in both themes */
 .pet-stage { position: relative; overflow: hidden; }
@@ -346,7 +343,7 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
 .pet-stage[data-bg="snow"] { background: linear-gradient(#CFE4FF, #FFFFFF 72%); }
 .pet-stage[data-bg="space"] { background: radial-gradient(circle at 30% 20%, #4B3C9A, #171B45 70%); }
 .pet-stage[data-bg="castle"] { background: linear-gradient(#FFD3EA, #C8B6FF); }
-.pet-name { background: var(--card); padding: 4px 16px; border-radius: 99px; }
+.pet-name { background: var(--card); padding: 4px 16px; border-radius: 99px; margin-top: 10px; }
 
 /* closet */
 .closet { display: flex; flex-direction: column; align-items: center; gap: 18px; }
@@ -355,7 +352,8 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
 .tab[aria-selected="true"] { background: var(--sun); color: var(--on-accent); box-shadow: none; }
 .items { width: 100%; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 12px; }
 .item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 6px 10px; border-radius: 20px; }
-.item .i-e { font-size: 2.6rem; line-height: 1.15; }
+.item .i-e { font-size: 2.6rem; line-height: 1.15; height: 3rem; display: grid; place-items: center; }
+.item .i-e svg { width: 3rem; height: 3rem; overflow: visible; }
 .item .i-p { font-size: .9rem; font-weight: 600; font-variant-numeric: tabular-nums; font-family: var(--font-ja); }
 .item.owned .i-p { color: var(--leaf); }
 .item.sel { box-shadow: 0 6px 0 var(--lift), inset 0 0 0 4px var(--ocean); }
@@ -375,6 +373,7 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
   box-shadow: 0 6px 0 var(--lift); max-width: calc(100% - 32px); animation: pop .4s;
 }
 .toast .t-stk { font-size: 2rem; }
+.toast .t-fig { width: 44px; }
 .spark { position: fixed; pointer-events: none; z-index: 30; font-size: 1.8rem; animation: fly .9s ease-out forwards; }
 
 @keyframes pop { 0% { transform: scale(.8); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
@@ -936,7 +935,7 @@ function addStars(n) {
   const grown = petStage();
   if (grown > stage) {
     const P = PET_STAGES[grown];
-    setTimeout(() => toast(`<span class="t-stk">${P.e}</span> ペットが ${grown === 1 ? 'うまれたよ' : 'おおきく なったよ'}!`), after > before ? 3400 : 500);
+    setTimeout(() => toast(`<span class="t-fig">${figure({}, grown)}</span> ペットが ${grown === 1 ? 'うまれたよ' : 'おおきく なったよ'}!`), after > before ? 3400 : 500);
   }
 }
 function pic(w, big) {
@@ -944,10 +943,98 @@ function pic(w, big) {
   if (w.n) return `<span class="numpic">${big ? `<span class="digit">${w.n}</span>` : ''}<span class="dots">${'<i></i>'.repeat(w.n)}</span></span>`;
   return `<span class="emoji">${w.e}</span>`;
 }
-// ペットの すがた(きせかえ つき)。wear を わたすと ためしぎ できる
-function figure(wear = state.wear) {
-  const acc = ['head', 'face', 'hand'].map(sl => wear[sl] ? `<span class="acc acc-${sl}">${ITEM[wear[sl]].e}</span>` : '').join('');
-  return `<span class="figure"><span class="f-body">${PET_STAGES[petStage()].e}</span>${acc}</span>`;
+/* ---------- pet art (SVG) ----------
+   どの段階も正面むき。a.head = 頭の中心x・てっぺんy・半径、a.eyes = 両目のx と y、a.hand = 羽で もつ 位置 */
+const eye = (x, y, r = 6) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#1F1F2E"/><circle cx="${x + r * .35}" cy="${y - r * .38}" r="${r * .36}" fill="#fff"/>`;
+const cheeks = (x1, x2, y) => `<ellipse cx="${x1}" cy="${y}" rx="8" ry="5" fill="#FF9AA8" opacity=".55"/><ellipse cx="${x2}" cy="${y}" rx="8" ry="5" fill="#FF9AA8" opacity=".55"/>`;
+const PET_ART = [
+  { // たまご
+    body: `<ellipse cx="100" cy="125" rx="54" ry="68" fill="#FFF6E5" stroke="#E9D8B8" stroke-width="3"/>
+      <circle cx="78" cy="152" r="6" fill="#F2DDB5"/><circle cx="126" cy="164" r="5" fill="#F2DDB5"/><circle cx="131" cy="104" r="4" fill="#F2DDB5"/><circle cx="70" cy="110" r="3" fill="#F2DDB5"/>
+      ${cheeks(76, 124, 126)}
+      <path d="M75,112 q9,8 18,0 M107,112 q9,8 18,0" stroke="#4A3A2A" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+    a: { head: { cx: 100, top: 57, r: 42 }, eyes: { x1: 84, x2: 116, y: 112 }, hand: { x: 154, y: 178, rot: 18, s: .9 } }
+  },
+  { // うまれたて
+    body: `<circle cx="100" cy="100" r="46" fill="#FFD84A"/>
+      <path d="M96,56 q-3,-13 6,-17 q-2,10 4,14 Z" fill="#FFC21A"/>
+      <g class="eyes">${eye(84, 96)}${eye(116, 96)}</g>
+      <path d="M93,108 L107,108 L100,118 Z" fill="#FF9F1C"/>${cheeks(72, 128, 110)}
+      <path d="M44,128 L58,115 L70,130 L84,115 L98,130 L112,115 L126,130 L140,115 L156,128 L152,170 Q100,198 48,170 Z" fill="#FFF6E5" stroke="#E9D8B8" stroke-width="3" stroke-linejoin="round"/>`,
+    wing: `<path d="M136,126 q18,-12 26,4 q-12,8 -26,2 Z" fill="#FFC21A"/>`,
+    a: { head: { cx: 100, top: 54, r: 40 }, eyes: { x1: 84, x2: 116, y: 96 }, hand: { x: 152, y: 130, s: .9 } }
+  },
+  { // ひよこ
+    body: `<ellipse cx="84" cy="182" rx="10" ry="4.5" fill="#FF9F1C"/><ellipse cx="116" cy="182" rx="10" ry="4.5" fill="#FF9F1C"/>
+      <path d="M46,118 q-20,10 -10,34 q16,-4 20,-20 Z" fill="#FFC21A"/>
+      <circle cx="100" cy="120" r="60" fill="#FFD84A"/>
+      <ellipse cx="100" cy="142" rx="36" ry="30" fill="#FFE88A"/>
+      <path d="M94,62 q-4,-14 6,-20 q-2,12 6,16 q2,-10 10,-10 q-6,8 -6,16 Z" fill="#FFC21A"/>
+      <g class="eyes">${eye(80, 106, 7)}${eye(120, 106, 7)}</g>
+      <path d="M92,118 L108,118 L100,129 Z" fill="#FF9F1C"/>${cheeks(66, 134, 122)}`,
+    wing: `<path d="M148,108 q26,4 22,36 q-16,2 -26,-14 Z" fill="#FFC21A"/>`,
+    a: { head: { cx: 100, top: 61, r: 44 }, eyes: { x1: 80, x2: 120, y: 106 }, hand: { x: 160, y: 130 } }
+  },
+  { // ことり
+    body: `<path d="M90,172 l-24,24 l28,-8 Z" fill="#2F6FD6"/>
+      <ellipse cx="88" cy="190" rx="9" ry="4" fill="#FFB020"/><ellipse cx="112" cy="190" rx="9" ry="4" fill="#FFB020"/>
+      <path d="M54,126 q-18,12 -8,34 q14,-6 18,-22 Z" fill="#2F6FD6"/>
+      <ellipse cx="100" cy="142" rx="50" ry="46" fill="#4A90E2"/>
+      <ellipse cx="100" cy="153" rx="30" ry="30" fill="#D4E8FF"/>
+      <circle cx="100" cy="84" r="38" fill="#4A90E2"/>
+      <g class="eyes">${eye(86, 82)}${eye(114, 82)}</g>
+      <path d="M93,92 L107,92 L100,102 Z" fill="#FFB020"/>${cheeks(76, 124, 96)}`,
+    wing: `<path d="M138,118 q30,4 26,42 q-18,-2 -30,-20 Z" fill="#2F6FD6"/>`,
+    a: { head: { cx: 100, top: 46, r: 38 }, eyes: { x1: 86, x2: 114, y: 82 }, hand: { x: 156, y: 142 } }
+  },
+  { // おしゃべりインコ
+    body: `<path d="M90,176 L78,202 L96,192 Z" fill="#E53935"/><path d="M100,178 L100,206 L108,190 Z" fill="#1E73E8"/><path d="M110,176 L124,200 L106,192 Z" fill="#FFD60A"/>
+      <ellipse cx="88" cy="186" rx="9" ry="4" fill="#9E9E9E"/><ellipse cx="112" cy="186" rx="9" ry="4" fill="#9E9E9E"/>
+      <path d="M56,124 q-18,12 -8,36 q14,-6 18,-22 Z" fill="#1F8F3A"/>
+      <ellipse cx="100" cy="140" rx="46" ry="48" fill="#2BB24C"/>
+      <ellipse cx="100" cy="150" rx="26" ry="30" fill="#A6E36B"/>
+      <path d="M96,46 q-3,-17 10,-22 q-5,12 2,22 Z" fill="#E53935"/>
+      <circle cx="100" cy="80" r="38" fill="#2BB24C"/>
+      <ellipse cx="100" cy="86" rx="28" ry="24" fill="#FFE066"/>
+      <path d="M68,68 Q100,30 132,68 Q100,56 68,68 Z" fill="#E53935"/>
+      <g class="eyes">${eye(88, 78)}${eye(112, 78)}</g>
+      <path d="M91,88 Q100,82 109,88 Q112,101 100,110 Q103,99 91,93 Z" fill="#F5E6C8" stroke="#C9B48E" stroke-width="2" stroke-linejoin="round"/>${cheeks(76, 124, 94)}`,
+    wing: `<path d="M134,116 q32,6 26,46 q-6,6 -14,4 q-16,-10 -20,-30 Z" fill="#1F8F3A"/><path d="M152,150 q8,4 6,14 q-6,4 -12,2 Z" fill="#1E73E8"/>`,
+    a: { head: { cx: 100, top: 44, r: 38 }, eyes: { x1: 88, x2: 112, y: 78 }, hand: { x: 152, y: 142 } }
+  }
+];
+const starPts = (cx, cy, R, r) => Array.from({ length: 10 }, (_, k) => {
+  const a = Math.PI / 5 * k - Math.PI / 2, d = k % 2 ? r : R;
+  return `${(cx + Math.cos(a) * d).toFixed(1)},${(cy + Math.sin(a) * d).toFixed(1)}`;
+}).join(' ');
+// アイテムの え。head は 下はし(y=0)が 頭に のる、face は 目の あいだが 32、hand は (0,0) を にぎる
+const ACC = {
+  cap: { vb: '-42 -44 108 54', svg: `<path d="M-36,2 C-36,-40 36,-40 36,2 Z" fill="#3B82F6"/><path d="M-6,-1 C14,-6 50,-6 60,4 C44,10 14,8 -6,4 Z" fill="#2563EB"/><path d="M0,-34 V0 M-20,-26 Q-10,-12 -8,0 M20,-26 Q10,-12 8,0" stroke="#2563EB" stroke-width="2" fill="none"/><circle cx="0" cy="-35" r="4" fill="#2563EB"/>` },
+  ribbon: { side: true, vb: '-32 -20 64 46', svg: `<path d="M0,0 L-24,-14 Q-30,0 -24,14 Z M0,0 L24,-14 Q30,0 24,14 Z" fill="#FF5C8A"/><path d="M-4,4 L-12,22 L-4,18 Z M4,4 L12,22 L4,18 Z" fill="#E63E6D"/><circle r="7" fill="#E63E6D"/>` },
+  flower: { side: true, vb: '-26 -26 52 52', svg: Array.from({ length: 5 }, (_, k) => { const a = k * 1.2566 - 1.5708; return `<circle cx="${(Math.cos(a) * 12).toFixed(1)}" cy="${(Math.sin(a) * 12).toFixed(1)}" r="11" fill="#FF9FC6"/>`; }).join('') + `<circle r="7" fill="#FFD60A"/>` },
+  hat: { vb: '-48 -64 96 74', svg: `<rect x="-26" y="-60" width="52" height="58" rx="5" fill="#2B2B33"/><rect x="-26" y="-20" width="52" height="10" fill="#D7263D"/><ellipse cx="0" cy="-2" rx="44" ry="8" fill="#1C1C22"/><rect x="-21" y="-55" width="7" height="32" rx="3.5" fill="#fff" opacity=".14"/>` },
+  crown: { vb: '-44 -52 88 58', svg: `<path d="M-34,0 L-36,-32 L-17,-14 L0,-42 L17,-14 L36,-32 L34,0 Z" fill="#FFC93C" stroke="#E0A100" stroke-width="3" stroke-linejoin="round"/><rect x="-34" y="-8" width="68" height="9" rx="3" fill="#E0A100"/><circle cx="0" cy="-20" r="5" fill="#E53935"/><circle cx="-20" cy="-4" r="3.5" fill="#1E73E8"/><circle cx="20" cy="-4" r="3.5" fill="#2BB24C"/><g fill="#FFC93C"><circle cx="-36" cy="-34" r="4"/><circle cx="0" cy="-44" r="4"/><circle cx="36" cy="-34" r="4"/></g>` },
+  glasses: { vb: '-40 -16 80 32', svg: `<g fill="rgba(210,236,255,.35)" stroke="#7A4A22" stroke-width="3.5"><circle cx="-16" cy="0" r="12"/><circle cx="16" cy="0" r="12"/></g><path d="M-4,-2 Q0,-6 4,-2 M-28,-2 L-36,-5 M28,-2 L36,-5" stroke="#7A4A22" stroke-width="3.5" fill="none" stroke-linecap="round"/>` },
+  goggles: { vb: '-44 -18 88 36', svg: `<rect x="-40" y="-5" width="80" height="10" rx="5" fill="#FF8A1F"/><g stroke="#4A4A55" stroke-width="4" fill="#7FD6F7"><circle cx="-16" cy="0" r="13"/><circle cx="16" cy="0" r="13"/></g><path d="M-22,-6 Q-18,-10 -12,-8 M10,-6 Q14,-10 20,-8" stroke="#fff" stroke-width="2.5" fill="none" opacity=".8" stroke-linecap="round"/>` },
+  sunglasses: { vb: '-36 -14 72 30', svg: `<path d="M-30,-8 H-3 V0 Q-4,11 -16,11 Q-29,11 -30,0 Z M30,-8 H3 V0 Q4,11 16,11 Q29,11 30,0 Z" fill="#1B1B22"/><path d="M-3,-6 H3 M-30,-6 L-36,-8 M30,-6 L36,-8" stroke="#1B1B22" stroke-width="4" stroke-linecap="round"/><path d="M-24,-4 L-18,4 M8,-4 L14,4" stroke="#fff" stroke-width="2.5" opacity=".6" stroke-linecap="round"/>` },
+  balloon: { vb: '-20 -112 50 120', svg: `<path d="M0,0 Q10,-28 4,-58" stroke="#8A8A8A" stroke-width="2" fill="none"/><ellipse cx="6" cy="-82" rx="21" ry="26" fill="#FF5A5F"/><path d="M2,-56 L10,-56 L6,-61 Z" fill="#E04449"/><ellipse cx="-2" cy="-92" rx="5" ry="8" fill="#fff" opacity=".45"/>` },
+  lollipop: { vb: '-24 -84 48 96', svg: `<rect x="-2.5" y="-46" width="5" height="54" rx="2.5" fill="#F4F4F4" stroke="#CFCFCF"/><circle cx="0" cy="-60" r="19" fill="#FF7FB6"/><path d="M-11,-60 a11,11 0 1,1 11,11 a6,6 0 1,1 -6,-6" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>` },
+  umbrella: { vb: '-46 -96 92 114', svg: `<path d="M0,-66 V6 Q0,14 -7,14 Q-13,14 -13,8" stroke="#5B4636" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M-42,-60 Q0,-104 42,-60 Q35,-66 28,-60 Q21,-66 14,-60 Q7,-66 0,-60 Q-7,-66 -14,-60 Q-21,-66 -28,-60 Q-35,-66 -42,-60 Z" fill="#8E6CFF"/><path d="M0,-89 Q-10,-74 -14,-61 M0,-89 Q10,-74 14,-61" stroke="#6F4FE6" stroke-width="2" fill="none"/>` },
+  wand: { vb: '-24 -84 48 96', svg: `<path d="M0,8 L0,-46" stroke="#2B2B33" stroke-width="6" stroke-linecap="round"/><path d="M0,-40 L0,-46" stroke="#fff" stroke-width="6" stroke-linecap="round"/><polygon points="${starPts(0, -60, 17, 7)}" fill="#FFD23F" stroke="#E0A100" stroke-width="2" stroke-linejoin="round"/><circle cx="16" cy="-78" r="2.5" fill="#FFD23F"/><circle cx="-15" cy="-72" r="2" fill="#FFD23F"/>` },
+  trophy: { vb: '-38 -68 76 76', svg: `<path d="M-22,-56 Q-36,-56 -32,-44 Q-28,-36 -20,-38 M22,-56 Q36,-56 32,-44 Q28,-36 20,-38" stroke="#E0A100" stroke-width="4" fill="none"/><path d="M-22,-62 H22 V-46 Q22,-24 0,-22 Q-22,-24 -22,-46 Z" fill="#FFC93C" stroke="#E0A100" stroke-width="3"/><rect x="-4" y="-22" width="8" height="16" fill="#E0A100"/><rect x="-16" y="-7" width="32" height="10" rx="3" fill="#8B5A2B"/><polygon points="${starPts(0, -46, 7, 3)}" fill="#fff" opacity=".7"/>` }
+};
+const accIcon = it => ACC[it.id] ? `<svg viewBox="${ACC[it.id].vb}" aria-hidden="true">${ACC[it.id].svg}</svg>` : it.e;
+
+// ペットの すがた(きせかえ つき)。wear を わたすと ためしぎ できる。かさねる じゅん: からだ → もちもの → 羽 → かお → あたま
+function figure(wear = state.wear, stage = petStage()) {
+  const P = PET_ART[stage], A = P.a, s = A.head.r / 40, put = (id, tf) => id && ACC[id] ? `<g transform="${tf}">${ACC[id].svg}</g>` : '';
+  const H = wear.head && ACC[wear.head];
+  const head = !H ? '' : H.side
+    ? put(wear.head, `translate(${A.head.cx - A.head.r * .62} ${A.head.top + A.head.r * .3}) rotate(-20) scale(${s})`)
+    : put(wear.head, `translate(${A.head.cx} ${A.head.top + A.head.r * .18}) rotate(-6) scale(${s})`);
+  const face = put(wear.face, `translate(${(A.eyes.x1 + A.eyes.x2) / 2} ${A.eyes.y}) scale(${(A.eyes.x2 - A.eyes.x1) / 32})`);
+  const hand = put(wear.hand, `translate(${A.hand.x} ${A.hand.y}) rotate(${A.hand.rot ?? 12}) scale(${A.hand.s ?? 1.15})`);
+  return `<svg class="figure" viewBox="-12 -52 224 262" aria-hidden="true">${P.body}${hand}${P.wing || ''}${face}${head}</svg>`;
 }
 const sceneAttrs = id => { const b = id && ITEM[id]; return b ? `data-bg="${b.id}" data-d1="${b.d[0]}" data-d2="${b.d[1]}"` : ''; };
 // ヒント: 1かいめ=にほんごの いみ + ゆっくり よみあげ、2かいめ=こたえが ひかる(⭐は なし)
@@ -1225,7 +1312,7 @@ const VIEWS = {
       <button class="pill alt chunky" data-act="closet">👕 きせかえ(🪙${state.coins})</button>
       ${body}
       <ol class="growth" aria-label="そだちかた">${PET_STAGES.map((p, k) =>
-        `<li class="${k <= st ? 'got' : ''} ${k === st ? 'now' : ''}"><span class="g-e">${k <= st ? p.e : '?'}</span><span class="g-at">⭐${p.at}</span></li>`).join('')}</ol>
+        `<li class="${k <= st ? 'got' : ''} ${k === st ? 'now' : ''}"><span class="g-e">${k <= st ? figure({}, k) : '?'}</span><span class="g-at">⭐${p.at}</span></li>`).join('')}</ol>
     </div>`;
   },
 
@@ -1254,7 +1341,7 @@ const VIEWS = {
       <div class="items">${ITEMS.filter(it => it.slot === v.slot).map(it => {
         const owned = state.owned[it.id], worn = state.wear[it.slot] === it.id;
         return `<button class="item chunky ${owned ? 'owned' : ''} ${worn ? 'wearing' : ''} ${it.id === v.sel ? 'sel' : ''}" data-act="item" data-arg="${it.id}" aria-label="${it.ja}">
-          <span class="i-e">${it.e}</span><span class="i-p">${worn ? 'つけてる' : owned ? '✓ もってる' : '🪙' + it.price}</span></button>`;
+          <span class="i-e">${accIcon(it)}</span><span class="i-p">${worn ? 'つけてる' : owned ? '✓ もってる' : '🪙' + it.price}</span></button>`;
       }).join('')}</div>
     </div>`;
   },
