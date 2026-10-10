@@ -29,7 +29,17 @@ for (const text of phrases()) {
 }
 
 const body = Object.entries(clips).map(([k, v]) => `${JSON.stringify(k)}:"${v}"`).join(',\n');
+// 学習エンジン(src/catalog.js, src/engine.js)を <script> として埋め込む
+const MARK = /<!--LEARNING-ENGINE:[^>]*-->/;
+if (!MARK.test(src)) throw new Error('src/app.html に LEARNING-ENGINE の目印がありません');
+const engineJs = ['catalog.js', 'engine.js'].map(f => {
+  const code = fs.readFileSync(path.join(root, 'src', f), 'utf8');
+  if (/<\/script/i.test(code)) throw new Error(`src/${f} に </script> が含まれています`);
+  return `<script>\n${code}</script>`;
+}).join('\n');
+const html = src.replace(MARK, () => engineJs).replace('/*CLIPS*/', () => '\n' + body + '\n');
+
 // 単体のページとして開けるよう doctype をつける
-fs.writeFileSync(path.join(root, 'index.html'), '<!doctype html>\n<html lang="ja">\n' + src.replace('/*CLIPS*/', '\n' + body + '\n'));
+fs.writeFileSync(path.join(root, 'index.html'), '<!doctype html>\n<html lang="ja">\n' + html);
 const kb = Math.round(fs.statSync(path.join(root, 'index.html')).size / 1024);
 console.log(`index.html: ${Object.keys(clips).length} clips, ${kb} KB`);
