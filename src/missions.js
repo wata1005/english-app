@@ -171,8 +171,8 @@ function missionHub() {
   return `<h2 class="ask">まずは かんたんな あそびから</h2><p class="note">1つできたら おしまいでも OK。いつでも おやすみ できます。</p>
     <nav class="modes" aria-label="ミッションを えらぶ">${['listen', 'talk'].map(tile).join('')}</nav>
     <details class="intro-more"><summary>ほかの あそび</summary><nav class="modes" aria-label="ほかの ミッション">${['phonics', 'story', 'message'].map(tile).join('')}</nav>
-      <button class="pill chunky" data-act="missionChallenge">🧺 いつもの おてつだい（3もん）</button><button class="pill chunky" data-act="missionTalkChallenge">🐰 いつもの おしゃべり（3つ）</button>
-      ${learn.getLevel() === 4 ? '<button class="pill chunky" data-act="missionRead">📖 じぶんで よむ（おうちの かたと）</button>' : ''}</details>
+      <div class="mission-continue" role="group" aria-label="いつもの ミッション"><button class="pill chunky" data-act="missionChallenge">🧺 いつもの おてつだい（3もん）</button><button class="pill chunky" data-act="missionTalkChallenge">🐰 いつもの おしゃべり（3つ）</button>
+      ${learn.getLevel() === 4 ? '<button class="pill chunky" data-act="missionRead">📖 じぶんで よむ（おうちの かたと）</button>' : ''}</div></details>
     <p class="note">おしゃべりと じぶんで よむ あそびは、できた ボタンで さんかを きろくします。おうちの かたが きいて たしかめることも できます。</p>`;
 }
 function missionScreen() {

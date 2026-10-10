@@ -87,7 +87,8 @@ test('Stage D: every mission level fits mobile and landscape viewports', { skip 
       Speech.say = () => {}; Speech.sayAll = () => {};
       const out = [];
       const check = name => out.push({ name, width: innerWidth, scroll: document.documentElement.scrollWidth,
-        targets: [...document.querySelectorAll('main button:not(.link)')].filter(b => b.getClientRects().length).every(b => b.getBoundingClientRect().height >= 44) });
+        targets: [...document.querySelectorAll('main button:not(.link)')].filter(b => b.getClientRects().length).every(b => b.getBoundingClientRect().height >= 44),
+        separateActions: name !== 'expandedHub' || [...document.querySelectorAll('.mission-continue button')].every((b, i, all) => !i || b.getBoundingClientRect().top - all[i - 1].getBoundingClientRect().bottom >= 16) });
       go('missions'); check('hub'); document.querySelector('details').open = true; check('expandedHub');
       showMissionIntro(); check('introDemo'); startMissionIntro(true); check('introGuided'); startMissionIntro(false); check('introSolo');
       showTalkIntro(); check('talkDemo'); startTalkIntro(true); check('talkGuided'); startTalkIntro(false); check('talkSolo');
@@ -103,6 +104,7 @@ test('Stage D: every mission level fits mobile and landscape viewports', { skip 
       assert.equal(item.width, width);
       assert.ok(item.scroll <= width, width + ' ' + item.name);
       assert.equal(item.targets, true, width + ' ' + item.name + ' touch targets');
+      assert.equal(item.separateActions, true, width + ' ' + item.name + ' separated actions');
     }
   }
 });
