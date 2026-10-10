@@ -301,6 +301,18 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
 .basket .b-ico { font-size: 2.2rem; margin-right: 6px; }
 .b-item { font-size: 2.4rem; line-height: 1; padding: 2px; }
 
+/* captions: the English line, its katakana reading and meaning */
+.caption { width: min(100%, 480px); padding: 10px 16px; border-radius: 16px; background: var(--card); box-shadow: inset 0 0 0 2px var(--line); display: flex; flex-direction: column; gap: 2px; text-align: center; }
+.caption p { margin: 0; }
+.cap-en { font-size: 1.4rem; font-weight: 600; line-height: 1.3; }
+.cap-en b { color: var(--tomato); font-weight: 600; }
+.cap-kana { font-family: var(--font-ja); font-size: .95rem; color: var(--ink-soft); }
+.cap-ja { font-family: var(--font-ja); font-size: .95rem; }
+.cap-kana b, .cap-ja b { font-weight: 500; color: var(--ink); }
+.mask { display: inline-block; min-width: 2.2em; border-bottom: 3px solid var(--sun); color: var(--ink-soft); line-height: 1.1; }
+.mcap { width: 100%; display: flex; justify-content: center; min-height: 1px; }
+.kana-word { font-family: var(--font-ja); font-size: 1.05rem; color: var(--ink-soft); }
+
 /* hints */
 .hintrow { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .hint-btn { padding: 10px 20px; border-radius: 99px; background: var(--card); box-shadow: inset 0 0 0 3px var(--sun); font-family: var(--font-ja); font-weight: 500; }
@@ -504,7 +516,7 @@ const hl = (word, letter) => { const k = word.indexOf(letter); return k < 0 ? wo
 const KEY = 'eigo-asobi-v1';
 const state = (() => {
   const d = { stars: 0, level: 1, rate: 0.8, showJa: true, learned: {}, pet: { day: '', meals: 0, hearts: 0 },
-    coins: 10, mic: 'record', owned: {}, wear: { head: null, face: null, hand: null, bg: null } };
+    coins: 10, mic: 'record', caption: 'full', capHide: true, owned: {}, wear: { head: null, face: null, hand: null, bg: null } };
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) return { ...d, ...s }; } catch (e) {}
   return d;
 })();
@@ -741,6 +753,54 @@ function figure(wear = state.wear, stage = petStage()) {
   return `<svg class="figure" viewBox="-12 -52 224 262" aria-hidden="true">${P.body}${hand}${P.wing || ''}${face}${head}</svg>`;
 }
 const sceneAttrs = id => { const b = id && ITEM[id]; return b ? `data-bg="${b.id}" data-d1="${b.d[0]}" data-d2="${b.d[1]}"` : ''; };
+/* ---------- 字幕(えいぶん・よみかた・いみ) ---------- */
+const KANA = {
+  cat: 'キャット', dog: 'ドッグ', rabbit: 'ラビット', bear: 'ベア', lion: 'ライオン', elephant: 'エレファント', monkey: 'モンキー', pig: 'ピッグ',
+  cow: 'カウ', fish: 'フィッシュ', bird: 'バード', frog: 'フロッグ', apple: 'アップル', banana: 'バナナ', grapes: 'グレイプス', strawberry: 'ストロベリー',
+  orange: 'オレンジ', bread: 'ブレッド', egg: 'エッグ', milk: 'ミルク', cake: 'ケイク', 'ice cream': 'アイス クリーム', rice: 'ライス', carrot: 'キャロット',
+  red: 'レッド', blue: 'ブルー', yellow: 'イエロー', green: 'グリーン', pink: 'ピンク', purple: 'パープル', brown: 'ブラウン', black: 'ブラック', white: 'ホワイト',
+  one: 'ワン', two: 'トゥー', three: 'スリー', four: 'フォー', five: 'ファイブ', six: 'シックス', seven: 'セブン', eight: 'エイト', nine: 'ナイン', ten: 'テン',
+  car: 'カー', bus: 'バス', train: 'トレイン', airplane: 'エアプレイン', ship: 'シップ', bicycle: 'バイシクル', taxi: 'タクシー', rocket: 'ロケット',
+  eye: 'アイ', ear: 'イア', nose: 'ノウズ', mouth: 'マウス', hand: 'ハンド', foot: 'フット',
+  hat: 'ハット', juice: 'ジュース', king: 'キング', queen: 'クイーン', sun: 'サン', umbrella: 'アンブレラ', violin: 'バイオリン', watch: 'ウォッチ',
+  box: 'ボックス', 'yo-yo': 'ヨーヨー', zebra: 'ズィーブラ',
+  apples: 'アップルズ', bananas: 'バナナズ', strawberries: 'ストロベリーズ', oranges: 'オレンジズ', carrots: 'キャロッツ', eggs: 'エッグズ'
+};
+const LETTER_KANA = 'エー ビー スィー ディー イー エフ ジー エイチ アイ ジェイ ケイ エル エム エヌ オウ ピー キュー アール エス ティー ユー ヴィー ダブリュー エックス ワイ ズィー'.split(' ');
+const ABC_JA = { hat: 'ぼうし', juice: 'ジュース', king: 'おうさま', queen: 'じょおう', sun: 'たいよう', umbrella: 'かさ', violin: 'バイオリン', watch: 'うでどけい', box: 'はこ', 'yo-yo': 'ヨーヨー', zebra: 'しまうま' };
+const ALL_WORDS = CATS.flatMap(c => c.words);
+const part = w => ({ en: w.en, kana: KANA[w.en] || '', ja: w.ja });
+// {w} の ところが こたえの ことば。かくす ときは ここだけ「?」に なる
+const lineQ = (c, w) => c.id === 'colors' ? { en: 'Which one is {w}?', kana: 'ウィッチ ワン イズ {w}?', ja: '{w}は どれ?', w: part(w) }
+  : c.id === 'numbers' ? { en: 'Find {w}!', kana: 'ファインド {w}!', ja: '{w}を さがして!', w: part(w) }
+  : w.pl ? { en: 'Where are the {w}?', kana: 'ウェア アー ザ {w}?', ja: '{w}は どこ?', w: part(w) }
+  : { en: 'Where is the {w}?', kana: 'ウェア イズ ザ {w}?', ja: '{w}は どこ?', w: part(w) };
+const linePop = w => ({ en: 'Pop the {w}!', kana: 'ポップ ザ {w}!', ja: '{w}の ふうせんを わって!', w: part(w) });
+const lineWant = w => {
+  const art = w.art || 'a', artK = { a: 'ア', an: 'アン', some: 'サム' }[art];
+  return { en: `I want ${art} {w}!`, kana: `アイ ウォント ${artK} {w}!`, ja: '{w}が たべたい!', w: part(w) };
+};
+const lineOrder = (n, w) => {
+  const word = n === 1 ? w.en : w.many, num = NUMS[n - 1];
+  return { en: '{w}, please!', kana: '{w}、プリーズ!', ja: '{w} ください!',
+    w: { en: `${num} ${word}`, kana: `${KANA[num.toLowerCase()]} ${KANA[word]}`, ja: `${w.ja}を ${n}こ` } };
+};
+const lineLetter = L => ({ en: '{w}', kana: '{w}', ja: '「{w}」の もじ', w: { en: L.u, kana: LETTER_KANA[L.u.charCodeAt(0) - 65], ja: L.u } });
+const lineWord = w => ({ en: '{w}', kana: '{w}', ja: '{w}', w: part(w) });
+const lineABC = L => {
+  const ja = (ALL_WORDS.find(w => w.en === L.w) || {}).ja || ABC_JA[L.w] || '';
+  const lk = LETTER_KANA[L.u.charCodeAt(0) - 65];
+  return { en: `${L.u} is for {w}.`, kana: `${lk} イズ フォー {w}`, ja: `${L.u}は {w}の ${L.u}`, w: { en: L.w, kana: KANA[L.w] || '', ja } };
+};
+function caption(line, hide) {
+  if (state.caption === 'off' || !line) return '';
+  const fill = (tpl, k) => tpl.replace('{w}', hide ? '<span class="mask">?</span>' : `<b>${line.w[k]}</b>`);
+  return `<div class="caption" aria-live="polite"><p class="cap-en">${fill(line.en, 'en')}</p>${state.caption === 'full'
+    ? `<p class="cap-kana">${fill(line.kana, 'kana')}</p><p class="cap-ja">${fill(line.ja, 'ja')}</p>` : ''}</div>`;
+}
+// こたえた あと(または つぎの もんだい)に 字幕を かきかえる
+function setCaption(line, hide) { const c = $('.caption'); if (c) c.outerHTML = caption(line, hide); }
+
 // ヒント: 1かいめ=にほんごの いみ + ゆっくり よみあげ、2かいめ=こたえが ひかる(⭐は なし)
 function hintRow(v) {
   const max = v.name === 'speak' ? 1 : 2, lv = v.hintLv || 0;
@@ -824,6 +884,7 @@ const VIEWS = {
       <button class="bigcard chunky" data-act="say" aria-label="${w.en} を きく">
         <span class="pic">${pic(w, true)}</span>
         <span class="word">${hl(w.en, w.en[0])}</span>
+        ${state.caption === 'full' ? `<span class="kana-word">${KANA[w.en] || ''}</span>` : ''}
         ${state.showJa ? `<span class="ja-word">${w.ja}</span>` : ''}
       </button>
       <div class="card-ctrl">
@@ -841,6 +902,7 @@ const VIEWS = {
     return `<div class="quiz">
       ${progress(view.round.length, view.i)}
       <button class="listen chunky" data-act="qsay"><span class="l-ico" aria-hidden="true">🔊</span>きいて、タッチ!</button>
+      ${caption(lineQ(CAT[view.cat], q.answer), state.capHide)}
       <div class="opts n${q.options.length}">${q.options.map((w, k) =>
         `<button class="opt chunky" data-act="pick" data-arg="${k}" aria-label="${w.ja}">${pic(w)}</button>`).join('')}</div>
       ${hintRow(view)}
@@ -854,6 +916,7 @@ const VIEWS = {
         <span class="abc-big">${L.u}<small>${L.l}</small></span>
         <span class="abc-pic"><span class="emoji">${L.e}</span><span class="abc-word">${hl(L.w, L.l)}</span></span>
       </button>
+      ${caption(lineABC(L), false)}
       <div class="abc-grid">${ABC.map((x, k) =>
         `<button class="abc-key chunky ${k === view.sel ? 'on' : ''}" data-act="abc" data-arg="${k}" aria-pressed="${k === view.sel}">${x.u}</button>`).join('')}</div>
     </div>`;
@@ -871,6 +934,7 @@ const VIEWS = {
         return `<button class="slot ${t != null ? 'full' : ''} ${v.done ? 'ok' : ''}" data-act="unslot" data-arg="${j}" ${t == null || v.done ? 'disabled' : ''} aria-label="${j + 1}もじめ">${
           t != null ? v.tiles[t].ch : (state.level === 1 ? `<span class="ghost">${ch}</span>` : '')}</button>`;
       }).join('')}</div>
+      ${v.done ? caption(lineWord(w), false) : ''}
       <div class="tiles">${v.tiles.map((t, k) =>
         `<button class="tile chunky ${k === glowAt ? 'glow' : ''}" data-act="tile" data-arg="${k}" ${t.used || v.done ? 'disabled' : ''}>${t.ch}</button>`).join('')}</div>
       <div class="row">${v.done
@@ -901,6 +965,7 @@ const VIEWS = {
         ${progress(view.total, view.i)}
         <button class="listen chunky" data-act="bsay"><span class="l-ico" aria-hidden="true">🔊</span>きいて、わろう!</button>
       </div>
+      ${caption(linePop(view.words[view.i]), state.capHide)}
       ${hintRow(view)}
       <div class="field" aria-label="ふうせん"></div>
     </div>`;
@@ -914,6 +979,7 @@ const VIEWS = {
         <button class="listen chunky" data-act="msay"><span class="l-ico" aria-hidden="true">🔊</span>きいて、たたこう!</button>
         ${state.level === 1 ? `<span class="sign" aria-label="さがす もじ">${L.u}</span>` : ''}
       </div>
+      ${caption(lineLetter(L), state.capHide)}
       ${hintRow(v)}
       <div class="meadow"><div class="holes">${Array.from({ length: 9 }, (_, k) =>
         `<div class="hole"><button class="mole" data-act="whack" data-arg="${k}" tabindex="-1"><span class="m-card"></span><span class="m-face">🐹</span></button></div>`).join('')}</div></div>
@@ -927,6 +993,7 @@ const VIEWS = {
       <div class="mcards">${v.cards.map((c, k) =>
         `<button class="mcard" data-act="flip" data-arg="${k}" aria-label="カード ${k + 1}"><span class="mc-in"><span class="mc-back" aria-hidden="true">?</span><span class="mc-front">${
           c.face === 'pic' ? `<span class="emoji">${c.w.e}</span>` : `<span class="mc-word">${c.w.en}</span>`}</span></span></button>`).join('')}</div>
+      <div class="mcap">${v.last ? caption(lineWord(v.last), false) : ''}</div>
       <p class="count mcount">みつけた ${v.matched} / ${v.total}</p>
       ${hintRow(v)}
     </div>`;
@@ -941,6 +1008,7 @@ const VIEWS = {
         <button class="bubble say-order" data-act="osay"><span aria-hidden="true">🔊</span>${
           v.done ? 'ありがとう!' : 'なにが ほしいかな?'}</button>
       </div>
+      ${caption(lineOrder(o.n, o.w), state.capHide && !v.done)}
       <div class="basket chunky" aria-label="かご"><span class="b-ico" aria-hidden="true">🧺</span>${
         v.basket.length ? v.basket.map((w, k) => `<button class="b-item" data-act="unbasket" data-arg="${k}" aria-label="${w.ja}を もどす" ${v.done ? 'disabled' : ''}>${w.e}</button>`).join('')
                         : '<span class="hint">たなから えらんで いれてね</span>'}</div>
@@ -973,6 +1041,7 @@ const VIEWS = {
       <div class="say-card chunky">
         <span class="pic">${pic(w, true)}</span>
         <span class="word">${hl(w.en, w.en[0])}</span>
+        ${state.caption === 'full' ? `<span class="kana-word">${KANA[w.en] || ''}</span>` : ''}
         ${state.showJa ? `<span class="ja-word">${w.ja}</span>` : ''}
       </div>
       <div class="row">
@@ -1014,6 +1083,7 @@ const VIEWS = {
         <p class="pet-name"><span>${P.ja}</span><span class="hearts" aria-label="なかよし ${state.pet.hearts}">❤️ ${state.pet.hearts}</span></p>
       </div>
       <button class="pill alt chunky" data-act="closet">👕 きせかえ(🪙${state.coins})</button>
+      ${st > 0 && v.want ? caption(lineWant(v.want), state.capHide && !v.fed) : ''}
       ${body}
       <ol class="growth" aria-label="そだちかた">${PET_STAGES.map((p, k) =>
         `<li class="${k <= st ? 'got' : ''} ${k === st ? 'now' : ''}"><span class="g-e">${k <= st ? figure({}, k) : '?'}</span><span class="g-at">⭐${p.at}</span></li>`).join('')}</ol>
@@ -1068,6 +1138,7 @@ const VIEWS = {
           <li>「ことばカード」で聞いて、まねして言ってみてから「きいてタッチ」で確かめる流れがおすすめです。</li>
           <li>1回10分くらいを目安に、いっしょに声に出して楽しんでください。</li>
           <li>ペットは⭐が5こで生まれ、⭐が増えるほど育ちます。ごはんは1日3回まで。毎日少しずつ続けるきっかけにどうぞ。</li>
+          <li>音声の英文は、読み方(カタカナ)と意味といっしょに画面にも表示できます。カタカナはあくまで目安なので、音声をまねするのがいちばんです。</li>
           <li>わからないときは「💡ヒント」を押すと、1回目は日本語の意味とゆっくりの読み上げ、2回目は答えが光ります(答えが光ったときは⭐はもらえません)。4〜5さいでは、まちがえるとヒントボタンが目立つように動きます。</li>
           <li>ゲームをクリアするとコインがもらえ、きせかえのお店で使えます(本物のお金はかかりません)。アイテムの名前は英語で聞けます。</li>
           <li>ほし・シールの記録は、この端末のブラウザに保存されます。</li>
@@ -1082,6 +1153,11 @@ const VIEWS = {
         <h3>おしゃべりゲームの マイク</h3>
         ${seg('mic', state.mic, [['record', 'ろくおんして くらべる'], ...(SR ? [['auto', 'じどうで はんてい']] : []), ['off', 'マイクを つかわない']])}
         <p class="note">ろくおんして くらべる:声はこの端末の中だけで録音・再生し、保存も送信もしません。${SR ? '<br>じどうで はんてい:ブラウザの音声認識を使います。Chrome では声が Google の、Safari では Apple のサーバーに送られることがあります。子どもの発音は認識されにくいので、2回うまくいかないと「いえた!」で先に進めるようにしています。' : ''}<br>どの方法でも、マイクが使えないときは「まねして言うだけ」になります。</p>
+        <h3>えいぶんの ひょうじ</h3>
+        ${seg('caption', state.caption, [['off', 'ひょうじしない'], ['en', 'えいぶんだけ'], ['full', 'えいぶん+よみかた+いみ']])}
+        <h3>こたえる まえは ことばを かくす</h3>
+        ${seg('capHide', state.capHide ? 1 : 0, [[1, 'かくす'], [0, 'かくさない']])}
+        <p class="note">音声の英文(例:Which one is red?)を画面にも表示します。「かくす」にすると、答えになる言葉だけを「Which one is ?」のように隠し、答えたあとに表示します。「かくさない」は、聞き取りより読む練習になります。</p>
         <h3>にほんごの いみを ひょうじ</h3>
         ${seg('ja', state.showJa ? 1 : 0, [[1, 'ひょうじする'], [0, 'かくす']])}
         <h3>きろくを けす</h3>
@@ -1159,6 +1235,7 @@ function spawnWave() {
   v.speed = H / (state.level === 1 ? 10 : 6.5); // 1びょうに すすむ px
   v.firstTry = true; v.locked = false; v.hintLv = 0; v.hintText = '';
   const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(v);
+  setCaption(linePop(target), state.capHide);
   Speech.say(popLine(target));
 }
 function balloonLoop(v) {
@@ -1193,6 +1270,7 @@ function moleTarget() {
   Object.assign(view, { firstTry: true, locked: false, since: 0, hintLv: 0, hintText: '', glow: false });
   $$('.mole.glow').forEach(m => m.classList.remove('glow'));
   const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(view);
+  setCaption(lineLetter(view.words[view.i]), state.capHide);
   Speech.say('#' + view.words[view.i].l);
 }
 function moleTick(v) {
@@ -1380,7 +1458,7 @@ const ACTS = {
     const v = view; if (v.locked) return;
     const q = v.round[v.i], w = q.options[Number(arg)];
     if (w === q.answer) {
-      v.locked = true; btn.classList.add('correct'); sfx.good(); burst(btn);
+      v.locked = true; btn.classList.add('correct'); sfx.good(); burst(btn); setCaption(lineQ(CAT[v.cat], q.answer), false);
       if (v.firstTry) { v.earned++; addStars(1); }
       Speech.sayAll([w.en, rnd(PRAISE)]);
       setTimeout(() => {
@@ -1455,7 +1533,7 @@ const ACTS = {
     const target = v.words[v.i];
     if (h.L === target) {
       h.hit = true; v.locked = true; clearTimeout(h.timer);
-      btn.querySelector('.m-face').textContent = '😵';
+      btn.querySelector('.m-face').textContent = '😵'; setCaption(lineLetter(target), false);
       sfx.pop(); burst(btn);
       if (v.firstTry) { v.earned++; addStars(1); }
       Speech.sayAll(['#' + target.l, rnd(PRAISE)]);
@@ -1476,6 +1554,7 @@ const ACTS = {
     const v = view, k = Number(arg), c = v.cards[k];
     if (v.busy || c.up) return;
     c.up = true; $$('.mcard')[k].classList.add('up'); v.open.push(k);
+    v.last = c.w; const mc = $('.mcap'); if (mc) mc.innerHTML = caption(lineWord(c.w), false);
     Speech.say(c.w.en);
     if (v.open.length < 2) return;
     const [a, b] = v.open.map(i => v.cards[i]), els = v.open.map(i => $$('.mcard')[i]);
@@ -1534,7 +1613,7 @@ const ACTS = {
     const target = v.words[v.i];
     if (b.w === target) {
       v.locked = true; b.alive = false;
-      el.classList.add('popped'); el.innerHTML = '<span class="emoji">💥</span>';
+      el.classList.add('popped'); el.innerHTML = '<span class="emoji">💥</span>'; setCaption(linePop(target), false);
       sfx.pop(); burst(el);
       if (v.firstTry) { v.earned++; addStars(1); }
       Speech.sayAll([target.en, rnd(PRAISE)]);
@@ -1626,6 +1705,8 @@ const ACTS = {
   level(arg) { state.level = Number(arg); save(); render(); },
   rate(arg) { state.rate = Number(arg); save(); render(); Speech.say('Hello! Let’s play!'); },
   mic(arg) { state.mic = arg; save(); render(); },
+  caption(arg) { state.caption = arg; save(); render(); },
+  capHide(arg) { state.capHide = arg === '1'; save(); render(); },
   ja(arg) { state.showJa = arg === '1'; save(); render(); },
   resetAsk() { view.confirmReset = true; render(); },
   resetNo() { view.confirmReset = false; render(); },
