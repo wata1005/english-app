@@ -1,6 +1,29 @@
 // Stage D mission controller. No network or microphone; spoken output is bundled by tools/build.js.
 const missionMode = mode => MissionContent.MODES[mode];
 const missionTask = () => view.tasks[view.i];
+// The demonstration is not a question: watching or leaving it produces no assessment.
+function missionIntroScreen() {
+  const o = view.object;
+  return `<section class="panel chunky mission"><h2>🧺 まずは おてほん</h2><p>きこえた たべものを、1かい タッチするだけ。</p>
+    <p class="mission-scene">🐰🧺</p><p class="note">うさぎさんが りんごを 1かい タッチするよ。</p>
+    <div class="mission-options">${view.options.map(x => `<div class="mission-choice chunky intro-demo ${x.id === o.id ? 'intro-cue' : ''}">${x.icon}${x.id === o.id ? '<span class="intro-hand">👆</span>' : ''}</div>`).join('')}</div>
+    <div class="mission-input intro-delivery"><span>${o.icon}</span><span>🐰「ありがとう！」</span></div><p class="note">おとなと いっしょに みても だいじょうぶ。</p>
+    <div class="seg"><button data-act="introReplay">🔊 おてほんを もういちど</button><button data-act="introTogether">いっしょに やってみる ▶</button></div>
+    <button class="link" data-act="missionHub">おやすみする</button></section>`;
+}
+function showMissionIntro() {
+  const object = MissionContent.OBJECTS[0], options = [object, MissionContent.OBJECTS[1]];
+  go('mission_intro', { object, options }); Speech.say(object.id);
+}
+function startMissionIntro(guided = true) {
+  const object = guided ? MissionContent.OBJECTS[0] : sample(MissionContent.OBJECTS, 1)[0];
+  const other = guided ? MissionContent.OBJECTS[1] : sample(MissionContent.OBJECTS.filter(x => x.id !== object.id), 1)[0];
+  logUnanswered();
+  view = { name: 'mission', mode: 'listen', level: 1, introCourse: true, guided, i: 0, earned: 0, answered: 0,
+    tasks: [{ id: object.id, canDo: guided ? null : 'L1_LI_01', kind: 'intro', guided, prompt: object.id,
+      answer: object.id, options: guided ? [object, other] : shuffle([object, other]), icon: '🐰🧺', scene: 'listen:intro', outcome: 'Great helping!' }] };
+  setupMissionTask(); render(); window.scrollTo(0, 0); playMissionPrompt(false);
+}
 function missionRounds(mode, level, readAlone = false) {
   const D = MissionContent;
   const scene = i => i % 2 ? 'garden' : 'picnic';
@@ -54,7 +77,7 @@ function startMission(mode, readAlone = false, targetLevel = learn.getLevel()) {
 function missionEvidence(v = view) {
   const t = v.tasks[v.i], skill = t.canDo ? LearningCatalog.BY_ID[t.canDo].skill : 'listening';
   return { canDoIds: t.canDo ? [t.canDo] : [], sceneId: t.scene, promptType: t.kind === 'tiles' ? 'phrase_tiles' : t.kind === 'observed' ? 'meaningful_response' : t.kind,
-    method: t.kind === 'observed' || !t.canDo ? 'self_report' : 'action', skill };
+    method: t.guided ? 'exposure' : t.kind === 'observed' || !t.canDo ? 'self_report' : 'action', skill };
 }
 function setupMissionTask() {
   const v = view, t = missionTask();
@@ -71,7 +94,7 @@ function missionSupport(v = view) {
   const t = v.tasks[v.i];
   return LearningEngine.supportLevel({ replayed: v.ev.replayed, mistakeBefore: v.ev.mistake,
     japaneseHint: v.hintLv >= 1 && effective().japaneseHint,
-    answerVisible: v.showModel || (t.kind === 'story' && v.storyTextVisible) || (t.kind !== 'observed' && t.kind !== 'story' && captionShowsAnswer()), answerHighlighted: v.hintLv >= 2 || v.showModel });
+    answerVisible: v.showModel || (t.kind === 'story' && v.storyTextVisible) || (t.kind !== 'observed' && t.kind !== 'story' && captionShowsAnswer()), answerHighlighted: t.guided || v.hintLv >= 2 || v.showModel });
 }
 function recordMission({ unanswered = false, firstTry, support } = {}) {
   const v = view, t = missionTask(), evidence = missionEvidence(v);
@@ -97,6 +120,11 @@ function missionPick(arg) {
   const v = view; if (v.name !== 'mission' || v.solved || v.finished) return;
   const t = missionTask();
   if (t.kind === 'observed') return;
+  if (t.kind === 'intro') {
+    if (!t.options.some(o => o.id === arg)) return;
+    if (arg === t.answer) { completeMissionTask(); return; }
+    markMistake(v); v.notice = 'もういちど きいてみよう。だいじょうぶ！'; render(); playMissionPrompt(false); return;
+  }
   if (t.kind === 'action') {
     const valid = [...MissionContent.OBJECTS.map(o => 'object:' + o.id), ...MissionContent.FRIENDS.map(f => 'friend:' + f.id), ...['on', 'under', 'in'].map(p => 'place:' + p)];
     if (!valid.includes(arg) || (t.spatial && arg.startsWith('friend:')) || (!t.spatial && arg.startsWith('place:'))) return;
@@ -121,18 +149,22 @@ function spatialPicture(place, icon = '🔵') {
   return `<span class="spatial-picture" data-place="${place}"><span class="spatial-box">📦</span><span class="spatial-object">${icon}</span></span>`;
 }
 function missionHub() {
-  return `<h2 class="ask">おはなしの なかで あそぼう</h2><p class="note">みじかい おてつだいが 3つ。いつでも おやすみ・スキップ できます。</p>
-    <nav class="modes" aria-label="ミッションを えらぶ">${Object.entries(MissionContent.MODES).map(([key, m]) => `<button class="mode chunky" data-act="missionStart" data-arg="${key}" style="--c:var(--ocean)"><span class="ico">${m.icon}</span><span><span class="m-ja">${m.ja}</span><br><span class="m-en">${m.en}</span></span></button>`).join('')}</nav>
-    ${learn.getLevel() === 4 ? '<button class="pill chunky" data-act="missionRead">📖 じぶんで よむ（おうちの かたと）</button>' : ''}
+  const tile = key => { const m = missionMode(key); return `<button class="mode chunky" data-act="missionStart" data-arg="${key}" style="--c:var(--ocean)"><span class="ico">${m.icon}</span><span><span class="m-ja">${m.ja}</span><br><span class="m-en">${m.en}</span>${key === 'listen' ? '<br><small>おてほんつき・2つから えらぶ</small>' : ''}</span></button>`; };
+  return `<h2 class="ask">まずは かんたんな あそびから</h2><p class="note">1つできたら おしまいでも OK。いつでも おやすみ できます。</p>
+    <nav class="modes" aria-label="ミッションを えらぶ">${['listen', 'talk'].map(tile).join('')}</nav>
+    <details class="intro-more"><summary>ほかの あそび</summary><nav class="modes" aria-label="ほかの ミッション">${['phonics', 'story', 'message'].map(tile).join('')}</nav>
+      <button class="pill chunky" data-act="missionChallenge">🧺 いつもの おてつだい（3もん）</button>
+      ${learn.getLevel() === 4 ? '<button class="pill chunky" data-act="missionRead">📖 じぶんで よむ（おうちの かたと）</button>' : ''}</details>
     <p class="note">おしゃべりと じぶんで よむ あそびは、できた ボタンで さんかを きろくします。おうちの かたが きいて たしかめることも できます。</p>`;
 }
 function missionScreen() {
   const v = view, m = missionMode(v.mode);
-  if (v.finished) return `<section class="panel chunky"><h2>おてつだい ありがとう！</h2><p class="mission-scene">${m.icon}✨🐰</p><p>さんかした おてつだい ${v.answered} / ${v.tasks.length}こ</p><p>⭐ ${v.earned}こ・🪙 ${v.finishCoins}まい</p><div class="seg"><button data-act="missionHub">あそびを えらぶ</button><button data-act="home">おしまい</button></div></section>`;
+  if (v.finished) return `<section class="panel chunky"><h2>おてつだい ありがとう！</h2><p class="mission-scene">${m.icon}✨🐰</p><p>さんかした おてつだい ${v.answered} / ${v.tasks.length}こ</p><p>⭐ ${v.earned}こ・🪙 ${v.finishCoins}まい</p><div class="seg"><button data-act="home">きょうは おしまい</button>${v.introCourse ? `<button data-act="${v.guided ? 'introSolo' : 'missionChallenge'}">${v.guided ? 'ひとりで やってみる' : 'いつもの おてつだいへ'}</button>` : ''}<button data-act="missionHub">あそびを えらぶ</button></div></section>`;
   const t = missionTask();
   const button = (value, content, label = value) => `<button class="mission-choice chunky" data-act="missionPick" data-arg="${escapeHtml(value)}" aria-label="${escapeHtml(label)}" ${v.solved ? 'disabled' : ''}>${content}</button>`;
   let body = '';
-  if (t.kind === 'action') body = `<div class="mission-options">${MissionContent.OBJECTS.map(o => button('object:' + o.id, o.icon, o.id)).join('')}</div>
+  if (t.kind === 'intro') body = `<p class="intro-instruction">${t.guided ? 'いっしょに：ひかっている えを タッチ！' : 'ひとりで：きこえた たべものを タッチ！'}</p><div class="mission-options">${t.options.map(o => `<button class="mission-choice chunky ${t.guided && o.id === t.answer ? 'intro-cue' : ''}" data-act="missionPick" data-arg="${o.id}" aria-label="${o.id}" ${v.solved ? 'disabled' : ''}>${o.icon}${t.guided && o.id === t.answer ? '<span class="intro-hand">👆</span>' : ''}</button>`).join('')}</div>`;
+  else if (t.kind === 'action') body = `<div class="mission-options">${MissionContent.OBJECTS.map(o => button('object:' + o.id, o.icon, o.id)).join('')}</div>
     <div class="mission-options">${t.spatial ? ['on', 'under', 'in'].map(p => button('place:' + p, spatialPicture(p), p)).join('') : MissionContent.FRIENDS.map(f => button('friend:' + f.id, f.icon, f.id)).join('')}</div>
     <p class="note">ものを タッチ → とどける ばしょを タッチ</p><p class="mission-input">${v.inputs.map(x => x.startsWith('object:') ? MissionContent.OBJECTS.find(o => o.id === x.split(':')[1]).icon : '✓').join(' → ')}</p>`;
   else if (t.kind === 'choice' || t.kind === 'stamp') body = `<div class="mission-options">${t.options.map(o => button(o, escapeHtml(o))).join('')}</div>`;
@@ -153,19 +185,23 @@ function missionScreen() {
   return `<section class="panel chunky mission"><h2>${m.icon} ${m.ja}</h2>${progress(v.tasks.length, v.i)}
     <p class="mission-scene" ${t.id === 'run' ? 'data-action="run"' : ''}>${t.place ? spatialPicture(t.place, '🐱') : t.icon}</p>
     <button class="listen chunky" data-act="missionReplay">🔊 もういちど きく</button>
-    ${t.kind !== 'story' && t.kind !== 'observed' ? caption(line, effective().capHide && !v.solved) : ''}${body}
-    ${v.solved ? `<p class="mission-feedback" role="status">${escapeHtml(v.notice)}</p><div class="seg"><button data-act="missionNext">つぎへ ▶</button>${t.kind === 'observed' && !v.observationDone ? '<button data-act="missionObserve">おうちの かたが たしかめる</button>' : ''}</div>`
+    ${t.kind !== 'story' && t.kind !== 'observed' && (t.kind !== 'intro' || !effective().capHide || v.solved) ? caption(line, effective().capHide && !v.solved) : ''}${body}
+    ${v.solved ? `<p class="mission-feedback" role="status">${escapeHtml(v.notice)}</p><div class="seg"><button data-act="missionNext">${v.introCourse ? 'できた！ おしまいへ ▶' : 'つぎへ ▶'}</button>${t.kind === 'observed' && !v.observationDone ? '<button data-act="missionObserve">おうちの かたが たしかめる</button>' : ''}</div>`
       : `<p role="status">${escapeHtml(v.notice)}</p><div class="seg"><button data-act="missionHint">💡 ヒント</button><button data-act="missionSkip">スキップ</button></div>${v.hintText ? `<p class="hint-box">${escapeHtml(v.hintText)}</p>` : ''}`}
     <button class="link" data-act="missionHub">おやすみする</button></section>`;
 }
 const missionActions = {
-  missionHub: () => go('missions'), missionStart: mode => startMission(mode), missionRead: () => startMission('story', true),
+  missionHub: () => go('missions'), missionStart: mode => mode === 'listen' ? showMissionIntro() : startMission(mode), missionRead: () => startMission('story', true),
+  introReplay() { if (view.name === 'mission_intro') Speech.say(view.object.id); },
+  introTogether() { if (view.name === 'mission_intro') startMissionIntro(true); },
+  introSolo() { if (view.name === 'mission' && view.finished && view.introCourse && view.guided) startMissionIntro(false); },
+  missionChallenge: () => startMission('listen'),
   missionReplay: () => playMissionPrompt(), missionPick,
   missionHint() {
     if (view.name !== 'mission' || view.solved || view.finished) return;
     const v = view, t = missionTask(); v.hintLv = Math.min(2, v.hintLv + 1); markReplay();
     if (!effective().japaneseHint && v.hintLv === 1) { v.hintText = 'Listen slowly.'; playMissionPrompt(); }
-    else { v.hintText = t.kind === 'action' ? t.sequence.map(x => x.split(':')[1]).join(' → ') : t.kind === 'choice' ? t.answer : t.kind === 'stamp' ? t.accepts.join(' / ') : t.kind === 'story' ? t.story.pages.map(p => p.icon).join(' → ') : t.model;
+    else { v.hintText = t.kind === 'action' ? t.sequence.map(x => x.split(':')[1]).join(' → ') : t.kind === 'intro' || t.kind === 'choice' ? t.answer : t.kind === 'stamp' ? t.accepts.join(' / ') : t.kind === 'story' ? t.story.pages.map(p => p.icon).join(' → ') : t.model;
       v.hintLv = 2; if (t.model) { v.showModel = true; Speech.say(t.model, true); } }
     render();
   },

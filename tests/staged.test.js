@@ -87,8 +87,9 @@ test('Stage D: every mission level fits mobile and landscape viewports', { skip 
       Speech.say = () => {}; Speech.sayAll = () => {};
       const out = [];
       const check = name => out.push({ name, width: innerWidth, scroll: document.documentElement.scrollWidth,
-        targets: [...document.querySelectorAll('main button:not(.link)')].every(b => b.getBoundingClientRect().height >= 44) });
-      go('missions'); check('hub');
+        targets: [...document.querySelectorAll('main button:not(.link)')].filter(b => b.getClientRects().length).every(b => b.getBoundingClientRect().height >= 44) });
+      go('missions'); check('hub'); document.querySelector('details').open = true; check('expandedHub');
+      showMissionIntro(); check('introDemo'); startMissionIntro(true); check('introGuided'); startMissionIntro(false); check('introSolo');
       for (const level of [1,2,3,4]) {
         learn.setLevel(level, 'parent_manual');
         for (const mode of Object.keys(MissionContent.MODES)) { startMission(mode); check(mode + level); }
@@ -103,4 +104,40 @@ test('Stage D: every mission level fits mobile and landscape viewports', { skip 
       assert.equal(item.targets, true, width + ' ' + item.name + ' touch targets');
     }
   }
+});
+
+
+test('Beginner course: demo, one-tap practice, optional solo, leaving and rewards', { skip }, () => {
+  const { result: r, errors } = runInChrome(String.raw`
+    Speech.say = () => {}; Speech.sayAll = () => {}; state.caption = 'off';
+    const out = {}, attempts = () => learn.snapshot().attempts;
+    ACTS.missionStart('listen'); out.demo = view.name; go('home'); out.demoAttempts = attempts().length;
+    showMissionIntro(); ACTS.introTogether();
+    out.guidedChoices = document.querySelectorAll('[data-act="missionPick"]').length;
+    out.cue = !!document.querySelector('button.intro-cue');
+    const stars = state.stars, coins = state.coins;
+    ACTS.missionPick(missionTask().answer); ACTS.missionPick(missionTask().answer);
+    out.guided = attempts().at(-1); out.guidedStars = state.stars - stars;
+    ACTS.missionNext(); ACTS.missionNext(); out.finished = view.finished; out.guidedCoins = state.coins - coins;
+    out.optionalSolo = !!document.querySelector('[data-act="introSolo"]');
+    ACTS.introSolo(); out.soloChoices = document.querySelectorAll('[data-act="missionPick"]').length;
+    out.soloNoCue = !document.querySelector('button.intro-cue'); ACTS.missionPick(missionTask().answer); out.solo = attempts().at(-1);
+    ACTS.missionNext(); ACTS.missionChallenge(); out.normal = { mode: view.mode, count: view.tasks.length, level: view.level };
+    go('home'); startMissionIntro(true); go('home'); out.leave = attempts().at(-1);
+    startMissionIntro(false); const t = missionTask(); ACTS.missionPick(t.options.find(o => o.id !== t.answer).id);
+    out.retry = !view.solved && document.querySelector('main').textContent.includes('だいじょうぶ'); ACTS.missionPick(t.answer); out.wrong = attempts().at(-1);
+    startMissionIntro(false); ACTS.missionHint(); ACTS.missionPick(missionTask().answer); out.hinted = attempts().at(-1);
+    startMissionIntro(true); const before = state.coins; ACTS.missionSkip(); out.skipped = attempts().at(-1); out.skipCoins = state.coins - before;
+    window.__done(out);
+  `);
+  assert.deepEqual(errors, []);
+  assert.equal(r.demo, 'mission_intro'); assert.equal(r.demoAttempts, 0);
+  assert.equal(r.guidedChoices, 2); assert.equal(r.cue, true);
+  assert.equal(r.guided.method, 'exposure'); assert.equal(r.guided.verified, false); assert.deepEqual(r.guided.canDoIds, []); assert.equal(r.guided.support, 3);
+  assert.equal(r.guidedStars, 1); assert.equal(r.finished, true); assert.equal(r.guidedCoins, 5); assert.equal(r.optionalSolo, true);
+  assert.equal(r.soloChoices, 2); assert.equal(r.soloNoCue, true); assert.deepEqual(r.solo.canDoIds, ['L1_LI_01']); assert.equal(r.solo.verified, true); assert.equal(r.solo.support, 0);
+  assert.deepEqual(r.normal, { mode: 'listen', count: 3, level: 1 });
+  assert.equal(r.leave.unanswered, true); assert.deepEqual(r.leave.canDoIds, []); assert.equal(r.leave.support, 3);
+  assert.equal(r.retry, true); assert.equal(r.wrong.firstTry, false); assert.ok(r.hinted.support >= 2);
+  assert.equal(r.skipped.unanswered, true); assert.equal(r.skipCoins, 0);
 });

@@ -233,6 +233,17 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
 .mission-scene[data-action="run"] { animation: missionRun 1.6s ease-in-out infinite alternate; }
 @keyframes missionRun { from { transform: translateX(-20px); } to { transform: translateX(20px); } }
 
+.intro-cue { outline: 4px solid var(--sun); background: var(--good-soft); }
+.intro-hand { display: block; font-size: 1.6rem; animation: introTap 1s ease-in-out infinite alternate; }
+.intro-delivery { display: flex; justify-content: center; gap: 36px; }
+.intro-delivery > span:first-child { animation: introDeliver 2s ease-in-out infinite; }
+@keyframes introDeliver { from { transform: translateX(-20px); opacity: .5; } to { transform: translateX(24px); opacity: 1; } }
+.intro-demo { position: relative; text-align: center; }
+.intro-instruction { text-align: center; font-weight: bold; }
+.intro-more summary { min-height: 48px; padding: 12px; cursor: pointer; }
+.intro-more nav { margin: 12px 0; }
+@keyframes introTap { from { transform: translateY(6px); } to { transform: translateY(-4px); } }
+
 /* Parent dashboard: wrap labels at narrow mobile sizes. */
 .parent-tabs { gap: 8px; }
 .parent-tabs button { flex: 1 1 130px; padding: 12px 10px; }
@@ -851,7 +862,7 @@ const progress = (n, i) => `<div class="progress" aria-label="${i + 1} / ${n}">$
 /* ---------- views ---------- */
 const app = $('#app');
 let view = { name: 'home' };
-const TITLES = { speak: 'おしゃべり', mole: 'もぐらたたき', memory: 'しんけいすいじゃく', shopgame: 'おみせやさん', closet: 'きせかえ', balloon: 'ふうせんわり', pet: 'ペット', pick: 'どれに する?', cards: 'ことば カード', quiz: 'きいて タッチ', abc: 'ABC', spell: 'もじ ならべ', result: 'できたね!', stickers: 'シール ちょう', missions: 'おはなし ミッション', mission: 'おはなし ミッション', parent: 'おうちの かたへ' };
+const TITLES = { speak: 'おしゃべり', mole: 'もぐらたたき', memory: 'しんけいすいじゃく', shopgame: 'おみせやさん', closet: 'きせかえ', balloon: 'ふうせんわり', pet: 'ペット', pick: 'どれに する?', cards: 'ことば カード', quiz: 'きいて タッチ', abc: 'ABC', spell: 'もじ ならべ', result: 'できたね!', stickers: 'シール ちょう', mission_intro: 'はじめての おてつだい', missions: 'おはなし ミッション', mission: 'おはなし ミッション', parent: 'おうちの かたへ' };
 
 function go(name, params = {}) { view = { name, ...params }; render(); window.scrollTo(0, 0); }
 
@@ -868,7 +879,7 @@ function render() {
 }
 
 const VIEWS = {
-  missions: missionHub, mission: missionScreen,
+  missions: missionHub, mission: missionScreen, mission_intro: missionIntroScreen,
   home() {
     const left = 5 - state.stars % 5;
     const allDone = Math.floor(state.stars / 5) >= STICKERS.length;
