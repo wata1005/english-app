@@ -1,4 +1,4 @@
-# Can-do Catalog v1.1
+# Can-do Catalog v1.2
 
 These are **app-defined**, age-appropriate observable descriptors informed by CEFR's action-oriented approach. They are not official CEFR descriptors and cannot confer CEFR levels.
 
@@ -10,7 +10,7 @@ These are **app-defined**, age-appropriate observable descriptors informed by CE
 ## Flags
 - **required** **[Decided]**: counts toward the level-up recommendation. A level-up is recommended only when **every** required Can-do of the current level is `mastered`.
 - **critical** **[Decided]**: a subset of required Can-dos that represent the core communicative ability of the level. **[Draft: Claude Code]** Critical Can-dos are (1) listed first in `次のおすすめ` and review scheduling, (2) highlighted on the parent dashboard, and (3) the only ones for which an overdue failed review is surfaced as `復習おすすめ` on the summary screen.
-- Reading and writing Can-dos at Levels 1–2 are **not required** so that promotion never waits on reading/writing maturation **[Draft: Claude Code]**, following the v1 rule "Do not block exploration or story access based on reading/writing maturation".
+- Reading and writing Can-dos at Levels 1–2 are **not required** so that promotion never waits on reading/writing maturation **[Decided]**: listening and speaking come first for 4-year-olds; reading and writing follow development.
 
 ## Catalog
 `Scene alternative` is the explicit substitute for "independent success in ≥2 different scenes" when a Can-do can realistically be practised in only one scene **[Decided: alternatives must be explicit]**. `Evidence source` shows where evidence can come from today (existing games) or later (new missions, Stage D). **[Draft: Claude Code]** for the required/critical assignment of individual rows and the scene alternatives.
@@ -40,17 +40,18 @@ These are **app-defined**, age-appropriate observable descriptors informed by CE
 | L4_RE_01 | 4 | Read a short decodable sentence | yes | no | Independently reads `The cat is on the mat` (separate from narrated mode) | ≥3 different sentences in one scene | Storybook read-alone mode (Stage D) |
 | L4_WR_01 | 4 | Construct a short message with purpose | no | no | Meaning communicated; mode tagged | ≥3 different messages in one scene | Magic message (Stage D) |
 
-## Speaking evidence **[Draft: Claude Code — needs ChatGPT decision]**
+## Speaking evidence **[Decided]**
 Automatic speech recognition is parent opt-in, and many families will keep it off. If required speaking Can-dos accepted only machine-verified speech, those children could never be recommended for level-up. Proposal:
 - For `SP` Can-dos, a success counts toward mastery when it is either `method='asr', recognition='valid'` **or** `method='parent_observed'`.
-- The dashboard always shows which method each success used (`音声認識で確認` / `保護者が確認`). Parent observations never appear as machine-verified.
+- The dashboard always shows which method each success used (`音声認識で確認` / `保護者が確認`). Parent observations never appear as machine-verified. The child's speaking progress must not depend on ASR accuracy.
 - `self_report` (the child's own `いえた!` button) and record-and-compare are **participation** only and never count toward mastery.
 
 ## Learning status **[Decided]**
 Definitions used below (all **[Draft: Claude Code]** precise wording):
 - **Valid success**: `completed && verified` with `method` in {`action`, `asr`, `parent_observed`} (any support level). `exposure` and `self_report` are never valid successes.
+- **First-try success**: a valid success with `firstTry === true`, any support level (used for task success).
 - **Independent success**: a valid success with `firstTry === true` **and** `support <= 1` (only audio replay allowed). A success after a mistake has `support >= 1` **[Decided]** and `firstTry === false`, so it is not independent.
-- **Counted**: after the de-duplication rule in LEARNING_ENGINE ("Counting rules").
+- **Counted**: `counted === true`, decided once by the repeat rule in LEARNING_ENGINE ("Counting rules"): only the same Can-do + item + scene + prompt repeated within 10 minutes is a repeat.
 
 | Status | Boundary condition |
 |---|---|

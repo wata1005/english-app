@@ -1,4 +1,4 @@
-# English App Curriculum v1.1
+# English App Curriculum v1.2
 
 > **v1.1 provenance.** **[Decided]** = ChatGPT review / parent decision (2026-10-10). **[Draft: Claude Code]** = detail proposed by Claude Code; needs ChatGPT confirmation.
 
@@ -52,7 +52,8 @@ Until this content exists, Level 1 cannot be fully assessed (only L1_LI_01 and L
 
 ## UI language policy **[Decided by parent, 2026-10-10]**
 - Existing caption settings (`caption`: off / English / English + reading + meaning, `capHide`) and the Japanese hint stay exactly as the family set them. Nothing is changed silently, for existing or new installs.
-- A parent-controlled **English-only mode** (`learner-progress-v1.settings.immersion`) is added to the parent screen. When ON **[Draft: Claude Code: exact behaviour]**: captions show English only (no katakana reading, no Japanese meaning), the Japanese meaning hint is replaced by a slow replay, and Japanese word labels on cards are hidden. Turning it OFF restores the family's previous caption and hint settings.
+- A parent-controlled **English-only mode** (`learner-progress-v1.settings.immersion`) is added to the parent screen. It is an **overlay** **[Decided]**: it is stored only in `learner-progress-v1` and is applied when the screen is drawn; it never writes to the legacy settings in `eigo-asobi-v1`. Turning it OFF therefore shows exactly the family's previous caption and hint settings, with nothing to restore or lose. When ON **[Draft: Claude Code: exact behaviour]**: captions show English only (no katakana reading, no Japanese meaning), the Japanese meaning hint is replaced by a slow replay, and Japanese word labels on cards are hidden.
+- Whichever mode is active, an answer visible in the captions at answer time is recorded with `support >= 2` and is never an independent success **[Decided]** (see LEARNING_ENGINE.md "Support levels").
 - The Japanese meaning hint stays available when English-only mode is OFF. Using it records `support = 2`, so it never counts as independent evidence.
 - Parent UI stays in Japanese.
 

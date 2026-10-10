@@ -1,4 +1,4 @@
-# Parent Dashboard Specification v1.1
+# Parent Dashboard Specification v1.2
 
 > **v1.1 provenance.** **[Decided]** = ChatGPT review / parent decision (2026-10-10). **[Draft: Claude Code]** = detail proposed by Claude Code; needs ChatGPT confirmation.
 
@@ -47,7 +47,7 @@ Fresh install: show `まだ学習記録がありません`, not 0% proficiency. 
 4. A completed but assisted task does not show `習得済み`.
 5. Speaking without reliable verification shows `参加・練習`.
 6. Level-up appears only when all required Can-dos are mastered and changes only after `承認する`.
-7. English-only mode ON/OFF restores the previous caption and hint settings.
+7. English-only mode ON/OFF never changes the stored caption/hint settings; after OFF the previous captions and Japanese hint appear exactly as before.
 8. Dashboard is usable at 320/375/430px widths, portrait and landscape.
 9. Child cannot casually open or erase parent data; adult gate is documented as convenience, not security.
 10. Data stays on the device; parent clearly sees this limitation.
