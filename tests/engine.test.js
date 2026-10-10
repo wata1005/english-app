@@ -500,3 +500,102 @@ test('attempts arriving out of time order give the same result as in order', () 
   assert.deepEqual(pickScoring(shuffled.engine.getEvidence('L1_LI_01')), pickScoring(inOrder.engine.getEvidence('L1_LI_01')));
   assert.equal(shuffled.engine.getCanDoProgress('L1_LI_01').status, inOrder.engine.getCanDoProgress('L1_LI_01').status);
 });
+
+// ---------- review fix 1: re-sent IDs after compaction ----------
+test('re-sending an attempt after it was folded into the aggregate never counts it twice', () => {
+  const env = setup();
+  const original = att({ id: 'resend-me', timestamp: env.now().toISOString(), itemId: 'dog' });
+  env.engine.recordAttempt(original);
+  env.now.advance(DAY); env.rec({ itemId: 'cat', sceneId: 'balloon:animals' });
+  env.now.advance(120 * DAY);
+  env.engine.compact();
+  assert.equal(env.engine.snapshot().attempts.length, 0, 'both attempts were folded');
+  const before = pickScoring(env.engine.getEvidence('L1_LI_01'));
+  assert.deepEqual(env.engine.recordAttempt(original), { ok: false, duplicate: true }, 'same ID, same time');
+  assert.deepEqual(env.engine.recordAttempt({ ...original, timestamp: env.now().toISOString() }), { ok: false, duplicate: true }, 'same ID, new time');
+  const old = env.engine.recordAttempt(att({ timestamp: original.timestamp }));
+  assert.equal(old.ok, false);
+  assert.equal(old.error, 'too_old', 'a new ID dated inside the folded period is refused explicitly');
+  assert.deepEqual(pickScoring(env.engine.getEvidence('L1_LI_01')), before);
+  // The same checks survive a reload.
+  const reloaded = E.createEngine({ storage: env.storage, catalog: C, now: env.now });
+  assert.deepEqual(reloaded.recordAttempt(original), { ok: false, duplicate: true });
+});
+
+test('remembered IDs and boundary keys stay bounded', () => {
+  const env = setup({ config: { maxAttempts: 100 } });
+  env.engine.batch(() => { for (let i = 0; i < 6000; i++) { env.now.advance(5 * MIN); env.rec({ itemId: `i${i % 50}`, sceneId: `quiz:s${i % 7}` }); } });
+  const snap = env.engine.snapshot();
+  assert.ok(snap.compactedIds.length <= 2000);
+  assert.ok(Object.keys(snap.boundaryKeys).length <= 3, 'only keys within 10 minutes of the boundary');
+  assert.ok(snap.foldedThrough);
+});
+
+// ---------- review fix 2: attempts arriving out of time order ----------
+const METRIC = ['taskSuccess', 'independence', 'transfer', 'retention', 'masteryScore'];
+const pickMetric = cp => Object.fromEntries(METRIC.map(k => [k, cp[k]]));
+function shuffle(arr, seed) { const r = lcg(seed), a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+test('random arrival order gives the same evidence, repeat decisions and scores as time order', () => {
+  // 600 attempts over 80 days (inside the detailed window), with deliberate repeats a few minutes apart.
+  const base = history(600, 80, 23).map((h, k) => ({ ...h, a: { ...h.a, id: `h${k}` } }));
+  const repeats = base.filter((_, k) => k % 5 === 0).map((h, k) => ({ ts: h.ts + (3 + (k % 9)) * MIN, a: { ...h.a, id: `r${k}`, completed: true, verified: true } }));
+  const all = [...base, ...repeats];
+  const end = '2026-03-25T09:00:00+09:00';
+  const sorted = setup({ now: clock(end) }), shuffled = setup({ now: clock(end) });
+  const put = (env, list) => env.engine.batch(() => { for (const { ts, a } of list) env.engine.recordAttempt(att({ ...a, timestamp: new Date(ts).toISOString() })); });
+  put(sorted, [...all].sort((x, y) => x.ts - y.ts));
+  put(shuffled, shuffle(all, 99));
+  const counted = env => Object.fromEntries(env.engine.snapshot().attempts.map(x => [x.id, x.counted]));
+  assert.deepEqual(counted(shuffled), counted(sorted), 'repeat decisions do not depend on arrival order');
+  assert.ok(Object.values(counted(sorted)).includes(false), 'the data really contains repeats');
+  for (const id of ['L1_LI_01', 'L1_RE_01', 'L2_LI_02', 'L1_SP_01']) {
+    assert.deepEqual(pickScoring(shuffled.engine.getEvidence(id)), pickScoring(sorted.engine.getEvidence(id)), id);
+    assert.deepEqual(pickMetric(shuffled.engine.getCanDoProgress(id)), pickMetric(sorted.engine.getCanDoProgress(id)), id);
+  }
+});
+
+test('a back-dated independent success moves the first success date and re-classifies retention probes', () => {
+  const env = setup({ now: clock('2026-10-20T10:00:00+09:00') });
+  const on = (d, o) => env.engine.recordAttempt(att({ timestamp: `2026-10-${String(d).padStart(2, '0')}T10:00:00+09:00`, ...o }));
+  on(10, { itemId: 'dog', sceneId: 'quiz:animals' });
+  on(12, { itemId: 'cat', sceneId: 'balloon:animals' });
+  let ev = env.engine.getEvidence('L1_LI_01');
+  assert.equal(ev.firstIndependentDate, '2026-10-10');
+  assert.equal(ev.retentionProbes, 0);
+  // A parent restores an earlier record (still inside the 90-day window).
+  on(1, { itemId: 'bear', sceneId: 'quiz:animals' });
+  ev = env.engine.getEvidence('L1_LI_01');
+  assert.equal(ev.firstIndependentDate, '2026-10-01');
+  assert.equal(ev.retentionProbes, 2, 'Oct 10 and Oct 12 are now 7+ days after the first success');
+  assert.equal(ev.retentionSuccesses, 2);
+  const cp = env.engine.getCanDoProgress('L1_LI_01');
+  assert.equal(cp.retention, 100);
+  assert.equal(cp.status, 'mastered', '3 independent, 2 scenes, 9 days apart, score 100');
+});
+
+test('a back-dated record changes the repeat decision of later records correctly', () => {
+  const env = setup({ now: clock('2026-10-01T12:00:00+09:00') });
+  const at = (min, id) => env.engine.recordAttempt(att({ id, itemId: 'dog', timestamp: new Date(new Date('2026-10-01T10:00:00+09:00').getTime() + min * MIN).toISOString() }));
+  const flags = () => Object.fromEntries(env.engine.snapshot().attempts.map(x => [x.id, x.counted]));
+  at(12, 'c');
+  assert.deepEqual(flags(), { c: true });
+  at(5, 'b');
+  assert.deepEqual(flags(), { b: true, c: false }, 'c is 7 minutes after b, so c becomes the repeat');
+  at(0, 'a');
+  assert.deepEqual(flags(), { a: true, b: false, c: true }, 'b is 5 minutes after a; c is 12 minutes after a and counts again');
+  assert.equal(env.engine.getEvidence('L1_LI_01').trials, 2);
+});
+
+test('parent observations can be back-dated inside the detailed window but not into the folded period', () => {
+  const env = setup({ config: { maxAttempts: 20 } });
+  env.engine.batch(() => { for (let i = 0; i < 30; i++) { env.now.advance(HOUR); env.rec({ itemId: `x${i}` }); } });
+  const boundary = env.engine.snapshot().foldedThrough;
+  const obs = ts => env.engine.recordAttempt(att({ canDoIds: ['L1_SP_01'], taskId: 'parent:observe', sceneId: 'home:observed', itemId: 'hello',
+    promptType: 'greet', method: 'parent_observed', timestamp: ts }));
+  assert.equal(obs(new Date(new Date(boundary).getTime() + MIN).toISOString()).ok, true, 'after the boundary: accepted');
+  const now = env.engine.snapshot().foldedThrough; // recording may have compacted again
+  const r = obs(new Date(new Date(now).getTime() - DAY).toISOString());
+  assert.equal(r.error, 'too_old');
+  assert.equal(r.foldedThrough, now, 'the UI can tell the parent which dates are still accepted');
+});

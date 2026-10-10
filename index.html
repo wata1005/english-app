@@ -496,6 +496,7 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
     maxAttempts: 3000,     // and at most this many
     protectHours: 24,      // recent attempts kept even when over the limit, unless that alone exceeds maxAttempts
     emergencyMax: 1000,    // compaction target when storage is full
+    compactedIdCap: 2000,  // IDs of folded attempts remembered to reject re-sends (extra safety; see foldedThrough)
     repeatMinutes: 10,     // same Can-do + item + scene + prompt within this window counts once
     setCap: 20,            // distinct scenes/items kept per Can-do aggregate (every threshold is <= 3)
     levelHistoryCap: 50,
@@ -532,7 +533,10 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
   function emptyProgress() {
     return {
       schemaVersion: 1, curriculumLevel: 1, attempts: [], aggregates: {}, canDoProgress: {},
-      levelHistory: [], sessionSummaries: [], monthlySummaries: [], recentKeys: {},
+      levelHistory: [], sessionSummaries: [], monthlySummaries: [],
+      foldedThrough: null,   // latest timestamp folded into aggregates; earlier attempts can no longer be inserted
+      boundaryKeys: {},      // repeat key -> time of its last counted success among folded attempts (only near foldedThrough)
+      compactedIds: [],      // IDs of the most recently folded attempts (capped)
       settings: { immersion: false }
     };
   }
@@ -581,12 +585,14 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
     const out = emptyProgress();
     if ([1, 2, 3, 4].includes(p.curriculumLevel)) out.curriculumLevel = p.curriculumLevel;
     if (Array.isArray(p.attempts)) out.attempts = p.attempts.filter(a => !attemptError(a, catalog) && isBool(a.counted));
-    for (const key of ['aggregates', 'canDoProgress', 'recentKeys']) {
+    for (const key of ['aggregates', 'canDoProgress', 'boundaryKeys']) {
       if (p[key] && typeof p[key] === 'object' && !Array.isArray(p[key])) out[key] = p[key];
     }
     for (const id of Object.keys(out.aggregates)) if (!catalog.BY_ID[id]) delete out.aggregates[id];
     for (const id of Object.keys(out.canDoProgress)) if (!catalog.BY_ID[id]) delete out.canDoProgress[id];
     for (const key of ['levelHistory', 'sessionSummaries', 'monthlySummaries']) if (Array.isArray(p[key])) out[key] = p[key];
+    if (Array.isArray(p.compactedIds)) out.compactedIds = p.compactedIds.filter(isStr);
+    if (isStr(p.foldedThrough) && !isNaN(time(p.foldedThrough))) out.foldedThrough = p.foldedThrough;
     if (p.settings && typeof p.settings === 'object') out.settings.immersion = p.settings.immersion === true;
     out.attempts.sort((x, y) => time(x.timestamp) - time(y.timestamp));
     return out;
@@ -597,6 +603,13 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
   const isSuccess = a => a.completed && a.verified;
   const isIndependent = a => isSuccess(a) && a.firstTry && a.support <= 1;
   const addCapped = (arr, v, cap) => { if (!arr.includes(v) && arr.length < cap) arr.push(v); };
+  // Repeat key: Can-do(s) + item + scene + prompt. Only successes with the same key can be repeats.
+  const keyCache = new WeakMap();
+  function repeatKey(a) {
+    let k = keyCache.get(a);
+    if (k === undefined) { k = [[...a.canDoIds].sort().join(','), a.itemId, a.sceneId, a.promptType].join('|'); keyCache.set(a, k); }
+    return k;
+  }
 
   function fold(acc, a, cfg) {
     acc.attempts++;
@@ -712,7 +725,7 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
       if (n - keepFrom > limit) {
         while (n - keepFrom > target && time(p.attempts[keepFrom].timestamp) < protectCut) keepFrom++;
         // Still over the limit with only the protected 24 hours left: the hard limit wins. Repeat detection
-        // does not depend on the detailed list (see recentKeys), and folding keeps every scoring input.
+        // near the boundary uses boundaryKeys, and folding keeps every scoring input.
         if (n - keepFrom > limit) keepFrom = n - target;
       }
       if (keepFrom === 0) return false;
@@ -725,7 +738,14 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
           touched.add(id);
         }
         addMonthly(a);
+        if (isEligible(a) && isSuccess(a) && a.counted) p.boundaryKeys[repeatKey(a)] = time(a.timestamp);
+        p.compactedIds.push(a.id);
       }
+      p.foldedThrough = removed[removed.length - 1].timestamp;
+      // Only keys within the repeat window of the boundary can still affect newer attempts.
+      const edge = time(p.foldedThrough) - cfg.repeatMinutes * 60000;
+      for (const k of Object.keys(p.boundaryKeys)) if (p.boundaryKeys[k] < edge) delete p.boundaryKeys[k];
+      if (p.compactedIds.length > cfg.compactedIdCap) p.compactedIds = p.compactedIds.slice(-cfg.compactedIdCap);
       for (const id of touched) recompute(id);
       trimSummaries();
       return p.attempts.length < before;
@@ -795,36 +815,60 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
       if (p.levelHistory.length > cfg.levelHistoryCap) p.levelHistory = p.levelHistory.slice(-cfg.levelHistoryCap);
     }
 
+    // Re-decides `counted` for every detailed attempt with this repeat key, in time order, starting from the
+    // boundary state. This makes the result independent of the order in which attempts arrived.
+    function recount(key, incoming) {
+      const windowMs = cfg.repeatMinutes * 60000;
+      let last = p.boundaryKeys[key] !== undefined ? p.boundaryKeys[key] : -Infinity;
+      const changed = new Set();
+      for (const x of p.attempts) {
+        if (repeatKey(x) !== key) continue;
+        let counted = true;
+        if (isEligible(x) && isSuccess(x)) {
+          const t = time(x.timestamp);
+          counted = t - last >= windowMs;
+          if (counted) last = t;
+        }
+        if (x.counted !== counted) {
+          x.counted = counted;
+          if (x !== incoming) for (const id of x.canDoIds) changed.add(id); // an earlier record's decision changed
+        }
+      }
+      return changed;
+    }
+
     function recordAttempt(input) {
       const err = attemptError(input, catalog);
       if (err) return { ok: false, error: err };
-      if (p.attempts.some(x => x.id === input.id)) return { ok: false, duplicate: true };
+      if (p.attempts.some(x => x.id === input.id) || p.compactedIds.includes(input.id)) return { ok: false, duplicate: true };
+      // Attempts at or before the folded boundary can no longer be placed in time order, so they are refused
+      // explicitly (e.g. a parent observation dated more than 90 days ago). Re-sends of folded attempts land here too.
+      if (p.foldedThrough && time(input.timestamp) <= time(p.foldedThrough)) {
+        return { ok: false, error: 'too_old', foldedThrough: p.foldedThrough };
+      }
       const a = { semanticMatch: null, recognitionConfidence: null, responseLatencyMs: null, ...input };
       a.canDoIds = [...new Set(a.canDoIds)];
       if (!a.firstTry && a.support < 1) a.support = 1; // a success after a mistake is at least support 1
-      // Repeat rule: only the same Can-do + item + scene + prompt within the window is a repeat.
       a.counted = true;
-      if (isEligible(a) && isSuccess(a)) {
-        const t = time(a.timestamp), windowMs = cfg.repeatMinutes * 60000;
-        const repeat = a.canDoIds.some(id => {
-          const last = p.recentKeys[[id, a.itemId, a.sceneId, a.promptType].join('|')];
-          return last !== undefined && Math.abs(t - last) < windowMs;
-        });
-        if (repeat) a.counted = false;
-        else for (const id of a.canDoIds) p.recentKeys[[id, a.itemId, a.sceneId, a.promptType].join('|')] = t;
-        for (const k of Object.keys(p.recentKeys)) if (t - p.recentKeys[k] >= windowMs) delete p.recentKeys[k];
-      }
       // Keep the list sorted by time (attempts normally arrive in order).
       let i = p.attempts.length;
       while (i > 0 && time(p.attempts[i - 1].timestamp) > time(a.timestamp)) i--;
       const appended = i === p.attempts.length;
       p.attempts.splice(i, 0, a);
+      // Repeat rule: only the same Can-do + item + scene + prompt within 10 minutes is a repeat.
+      const changed = recount(repeatKey(a), a);
       for (const id of a.canDoIds) {
-        if (appended && live[id]) fold(live[id], a, cfg);
-        else delete live[id]; // out of order: rebuild in time order on next use
+        if (appended && live[id] && !changed.has(id)) fold(live[id], a, cfg);
+        else delete live[id]; // out of order or a recount changed: rebuild in time order on next use
       }
+      for (const id of changed) delete live[id];
       const results = {};
-      for (const id of a.canDoIds) { recompute(id); updateReview(id, a); results[id] = { ...p.canDoProgress[id] }; }
+      for (const id of new Set([...a.canDoIds, ...changed])) recompute(id);
+      for (const id of a.canDoIds) {
+        // Review scheduling moves forward only with the newest attempt; back-dated records still count as evidence.
+        if (appended) updateReview(id, a);
+        results[id] = { ...p.canDoProgress[id] };
+      }
       if (p.attempts.length > cfg.maxAttempts || (p.attempts[0] && time(p.attempts[0].timestamp) < time(now()) - cfg.keepDays * DAY)) {
         compact(cfg.maxAttempts);
       }
