@@ -24,6 +24,7 @@
   --good-soft: #D5F5E6;
   --on-accent: #1B2440;
   --field-top: #AEDDFB;
+  --sun-soft: #FFF1C2;
   --field-bot: #EEF8FF;
   --font: "Fredoka", "Kiwi Maru", "Hiragino Maru Gothic ProN", "Arial Rounded MT Bold", "Yu Gothic", system-ui, sans-serif;
   --font-ja: "Kiwi Maru", "Hiragino Maru Gothic ProN", "Yu Gothic", system-ui, sans-serif;
@@ -32,13 +33,13 @@
   :root:not([data-theme="light"]) {
     --sky: #132039; --dot: #1C2C4C; --card: #1F2F51; --ink: #EEF4FF; --ink-soft: #A9B8D6;
     --line: #34497A; --lift: #0A1326; --good-soft: #1D4A3C;
-    --field-top: #1E3B6E; --field-bot: #142443; color-scheme: dark;
+    --field-top: #1E3B6E; --field-bot: #142443; --sun-soft: #4A3D17; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --sky: #132039; --dot: #1C2C4C; --card: #1F2F51; --ink: #EEF4FF; --ink-soft: #A9B8D6;
   --line: #34497A; --lift: #0A1326; --good-soft: #1D4A3C;
-    --field-top: #1E3B6E; --field-bot: #142443; color-scheme: dark;
+    --field-top: #1E3B6E; --field-bot: #142443; --sun-soft: #4A3D17; color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -112,7 +113,7 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
 .mode .m-en { font-size: .95rem; font-weight: 600; opacity: .7; letter-spacing: .04em; }
 .sec { margin: 4px 0 -8px; font-family: var(--font-ja); font-weight: 500; font-size: 1.1rem; color: var(--ink-soft); display: flex; gap: 10px; align-items: baseline; }
 .sec .en { font-size: .9rem; font-weight: 600; letter-spacing: .06em; }
-@media (max-width: 639px) { .modes-sub .mode:last-child { grid-column: span 2; min-height: 120px; } }
+@media (min-width: 640px) { .modes-sub { grid-template-columns: repeat(4, 1fr); } }
 .mode .new { position: absolute; top: 14px; right: 14px; background: var(--card); color: var(--tomato); font-size: .8rem; font-weight: 700; letter-spacing: .08em; padding: 2px 10px; border-radius: 99px; }
 .link { align-self: center; color: var(--ink-soft); font-family: var(--font-ja); font-size: .95rem; text-decoration: underline; text-underline-offset: 4px; padding: 12px; }
 
@@ -301,6 +302,30 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
 .basket { width: min(100%, 480px); min-height: 84px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 12px 16px; }
 .basket .b-ico { font-size: 2.2rem; margin-right: 6px; }
 .b-item { font-size: 2.4rem; line-height: 1; padding: 2px; }
+
+/* hints */
+.hintrow { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.hint-btn { padding: 10px 20px; border-radius: 99px; background: var(--card); box-shadow: inset 0 0 0 3px var(--sun); font-family: var(--font-ja); font-weight: 500; }
+.hint-btn:disabled { opacity: .45; cursor: default; }
+.hint-btn.pulse { animation: nudge 1.2s ease-in-out 3; }
+.hint-box { margin: 0; max-width: 480px; padding: 10px 20px; border-radius: 16px; background: var(--sun-soft); font-family: var(--font-ja); font-size: 1.2rem; text-align: center; text-wrap: balance; }
+.glow { box-shadow: 0 0 0 5px var(--sun), 0 0 26px 8px var(--sun) !important; }
+.mole.glow { box-shadow: none !important; }
+.mole.glow .m-card { box-shadow: 0 0 0 4px var(--sun), 0 0 20px 6px var(--sun); }
+.tile.glow { animation: nudge 1s ease-in-out infinite; }
+@keyframes nudge { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+/* speaking game */
+.speak { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.say-card { width: min(100%, 400px); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 20px; }
+.say-card .pic { font-size: 6rem; min-height: 1.1em; display: grid; place-items: center; }
+.say-card .word { font-size: 2.8rem; }
+.listen.mine { background: var(--berry); }
+.sp-status { margin: 0; max-width: 440px; text-align: center; font-family: var(--font-ja); color: var(--ink-soft); text-wrap: balance; }
+.sp-status b { color: var(--ink); font-family: var(--font); font-size: 1.2rem; }
+.mic { width: 116px; height: 116px; border-radius: 50%; background: var(--tomato); color: var(--on-accent); font-size: 3rem; display: grid; place-items: center; }
+.mic.on { animation: ring 1.2s ease-out infinite; }
+@keyframes ring { 0% { box-shadow: 0 0 0 0 var(--tomato); } 100% { box-shadow: 0 0 0 26px transparent; } }
 
 /* dress-up figure: accessories are placed in % of the pet emoji box */
 .figure { position: relative; display: inline-block; line-height: 1; }
@@ -776,7 +801,7 @@ const hl = (word, letter) => { const k = word.indexOf(letter); return k < 0 ? wo
 const KEY = 'eigo-asobi-v1';
 const state = (() => {
   const d = { stars: 0, level: 1, rate: 0.8, showJa: true, learned: {}, pet: { day: '', meals: 0, hearts: 0 },
-    coins: 10, owned: {}, wear: { head: null, face: null, hand: null, bg: null } };
+    coins: 10, mic: 'record', owned: {}, wear: { head: null, face: null, hand: null, bg: null } };
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) return { ...d, ...s }; } catch (e) {}
   return d;
 })();
@@ -804,44 +829,44 @@ const Speech = {
     }
     return this.buffers[k];
   },
-  async clip(k) {
-    const buf = await this.buffer(k);
+  async clip(k, slow) { return this.playBuf(await this.buffer(k), state.rate / 0.8 * (slow ? .75 : 1)); },
+  playBuf(buf, rate = 1) {
     return new Promise(res => {
       const s = ac.createBufferSource();
-      s.buffer = buf; s.playbackRate.value = state.rate / 0.8;
+      s.buffer = buf; s.playbackRate.value = rate;
       s.connect(ac.destination); s.onended = res;
       this.src = s; s.start();
     });
   },
-  tts1(text) {
+  tts1(text, slow) {
     if (!this.tts) return Promise.resolve();
     return new Promise(res => {
       const u = new SpeechSynthesisUtterance(text[0] === '#' ? text[1] : text);
       u.lang = 'en-US'; if (this.voice) u.voice = this.voice;
-      u.rate = state.rate; u.pitch = 1.1;
+      u.rate = state.rate * (slow ? .75 : 1); u.pitch = 1.1;
       u.onend = res; u.onerror = res;
       speechSynthesis.resume();
       speechSynthesis.speak(u);
       setTimeout(res, 5000);
     });
   },
-  async one(text) {
+  async one(text, slow) {
     const k = clipKey(text);
     if (CLIPS[k] && sfx.ctx()) {
-      try { return await this.clip(k); } catch (e) { delete CLIPS[k]; }
+      try { return await this.clip(k, slow); } catch (e) { delete CLIPS[k]; }
     }
-    return this.tts1(text);
+    return this.tts1(text, slow);
   },
   stop() {
     if (this.src) { try { this.src.onended = null; this.src.stop(); } catch (e) {} this.src = null; }
     if (this.tts && (speechSynthesis.speaking || speechSynthesis.pending)) speechSynthesis.cancel();
   },
-  sayAll(list) {
+  sayAll(list, slow) {
     const id = ++this.seq;
     this.stop();
-    return list.reduce((p, t) => p.then(() => id === this.seq ? this.one(t) : null), Promise.resolve());
+    return list.reduce((p, t) => p.then(() => id === this.seq ? this.one(t, slow) : null), Promise.resolve());
   },
-  say(t) { return this.sayAll([t]); }
+  say(t, slow) { return this.sayAll([t], slow); }
 };
 Speech.init();
 
@@ -925,12 +950,19 @@ function figure(wear = state.wear) {
   return `<span class="figure"><span class="f-body">${PET_STAGES[petStage()].e}</span>${acc}</span>`;
 }
 const sceneAttrs = id => { const b = id && ITEM[id]; return b ? `data-bg="${b.id}" data-d1="${b.d[0]}" data-d2="${b.d[1]}"` : ''; };
+// ヒント: 1かいめ=にほんごの いみ + ゆっくり よみあげ、2かいめ=こたえが ひかる(⭐は なし)
+function hintRow(v) {
+  const max = v.name === 'speak' ? 1 : 2, lv = v.hintLv || 0;
+  return `<div class="hintrow"><button class="hint-btn" data-act="hint" ${lv >= max ? 'disabled' : ''}>💡 ${
+    v.name === 'memory' ? 'ちらっと みる' : lv && lv < max ? 'もっと ヒント' : 'ヒント'}</button>${v.hintText ? `<p class="hint-box">${v.hintText}</p>` : ''}</div>`;
+}
+function nudgeHint() { const b = $('.hint-btn'); if (b && state.level === 1 && !b.disabled) { b.classList.remove('pulse'); void b.offsetWidth; b.classList.add('pulse'); } }
 const progress = (n, i) => `<div class="progress" aria-label="${i + 1} / ${n}">${Array.from({ length: n }, (_, k) => `<i class="${k < i ? 'done' : k === i ? 'now' : ''}"></i>`).join('')}</div>`;
 
 /* ---------- views ---------- */
 const app = $('#app');
 let view = { name: 'home' };
-const TITLES = { mole: 'もぐらたたき', memory: 'しんけいすいじゃく', shopgame: 'おみせやさん', closet: 'きせかえ', balloon: 'ふうせんわり', pet: 'ペット', pick: 'どれに する?', cards: 'ことば カード', quiz: 'きいて タッチ', abc: 'ABC', spell: 'もじ ならべ', result: 'できたね!', stickers: 'シール ちょう', parent: 'おうちの かたへ' };
+const TITLES = { speak: 'おしゃべり', mole: 'もぐらたたき', memory: 'しんけいすいじゃく', shopgame: 'おみせやさん', closet: 'きせかえ', balloon: 'ふうせんわり', pet: 'ペット', pick: 'どれに する?', cards: 'ことば カード', quiz: 'きいて タッチ', abc: 'ABC', spell: 'もじ ならべ', result: 'できたね!', stickers: 'シール ちょう', parent: 'おうちの かたへ' };
 
 function go(name, params = {}) { view = { name, ...params }; render(); window.scrollTo(0, 0); }
 
@@ -970,15 +1002,16 @@ const VIEWS = {
       <nav class="modes" aria-label="ゲームを えらぶ">
         ${tile('quiz', 'きいて タッチ', 'Listen & Touch', '👂', '--ocean')}
         ${tile('balloon', 'ふうせんわり', 'Balloon Pop', '🎈', '--tomato')}
-        ${tile('mole', 'もぐらたたき', 'Whack-a-Letter', '🐹', '--leaf', true)}
-        ${tile('memory', 'しんけいすいじゃく', 'Memory', '🎴', '--berry', true)}
-        ${tile('shopgame', 'おみせやさん', 'Shop', '🧺', '--sun', true)}
-        ${tile('spell', 'もじ ならべ', 'Spelling', '🧩', '--ocean')}
+        ${tile('speak', 'おしゃべり', 'Say It!', '🎤', '--berry', true)}
+        ${tile('mole', 'もぐらたたき', 'Whack-a-Letter', '🐹', '--leaf')}
+        ${tile('memory', 'しんけいすいじゃく', 'Memory', '🎴', '--sun')}
+        ${tile('shopgame', 'おみせやさん', 'Shop', '🧺', '--ocean')}
       </nav>
       <h2 class="sec">まなぶ・あつめる <span class="en">Learn</span></h2>
       <nav class="modes modes-sub" aria-label="まなぶ">
         ${tile('cards', 'ことば カード', 'Word Cards', '🃏', '--sun')}
         ${tile('abc', 'エー ビー シー', 'ABC', '🔤', '--leaf')}
+        ${tile('spell', 'もじ ならべ', 'Spelling', '🧩', '--tomato')}
         ${tile('stickers', 'シール ちょう', 'Sticker Book', '🦄', '--berry')}
       </nav>
       <button class="link" data-act="go" data-arg="parent">おうちの かたへ ・ せってい</button>`;
@@ -1019,6 +1052,7 @@ const VIEWS = {
       <button class="listen chunky" data-act="qsay"><span class="l-ico" aria-hidden="true">🔊</span>きいて、タッチ!</button>
       <div class="opts n${q.options.length}">${q.options.map((w, k) =>
         `<button class="opt chunky" data-act="pick" data-arg="${k}" aria-label="${w.ja}">${pic(w)}</button>`).join('')}</div>
+      ${hintRow(view)}
     </div>`;
   },
 
@@ -1036,6 +1070,7 @@ const VIEWS = {
 
   spell() {
     const v = view, w = v.words[v.i], ans = w.en;
+    const glowAt = v.hintLv >= 2 && !v.done ? v.tiles.findIndex(t => !t.used && t.ch === ans[v.filled.length]) : -1;
     return `<div class="spell">
       ${progress(v.words.length, v.i)}
       <div class="spell-top"><span class="pic">${pic(w, true)}</span>
@@ -1046,10 +1081,11 @@ const VIEWS = {
           t != null ? v.tiles[t].ch : (state.level === 1 ? `<span class="ghost">${ch}</span>` : '')}</button>`;
       }).join('')}</div>
       <div class="tiles">${v.tiles.map((t, k) =>
-        `<button class="tile chunky" data-act="tile" data-arg="${k}" ${t.used || v.done ? 'disabled' : ''}>${t.ch}</button>`).join('')}</div>
+        `<button class="tile chunky ${k === glowAt ? 'glow' : ''}" data-act="tile" data-arg="${k}" ${t.used || v.done ? 'disabled' : ''}>${t.ch}</button>`).join('')}</div>
       <div class="row">${v.done
         ? `<button class="pill chunky" data-act="snext">つぎへ ▶</button>`
         : `<button class="pill alt chunky" data-act="sback" ${v.filled.length ? '' : 'disabled'}>⌫ ひとつ けす</button>`}</div>
+      ${v.done ? '' : hintRow(v)}
     </div>`;
   },
 
@@ -1074,6 +1110,7 @@ const VIEWS = {
         ${progress(view.total, view.i)}
         <button class="listen chunky" data-act="bsay"><span class="l-ico" aria-hidden="true">🔊</span>きいて、わろう!</button>
       </div>
+      ${hintRow(view)}
       <div class="field" aria-label="ふうせん"></div>
     </div>`;
   },
@@ -1086,6 +1123,7 @@ const VIEWS = {
         <button class="listen chunky" data-act="msay"><span class="l-ico" aria-hidden="true">🔊</span>きいて、たたこう!</button>
         ${state.level === 1 ? `<span class="sign" aria-label="さがす もじ">${L.u}</span>` : ''}
       </div>
+      ${hintRow(v)}
       <div class="meadow"><div class="holes">${Array.from({ length: 9 }, (_, k) =>
         `<div class="hole"><button class="mole" data-act="whack" data-arg="${k}" tabindex="-1"><span class="m-card"></span><span class="m-face">🐹</span></button></div>`).join('')}</div></div>
     </div>`;
@@ -1099,6 +1137,7 @@ const VIEWS = {
         `<button class="mcard" data-act="flip" data-arg="${k}" aria-label="カード ${k + 1}"><span class="mc-in"><span class="mc-back" aria-hidden="true">?</span><span class="mc-front">${
           c.face === 'pic' ? `<span class="emoji">${c.w.e}</span>` : `<span class="mc-word">${c.w.en}</span>`}</span></span></button>`).join('')}</div>
       <p class="count mcount">みつけた ${v.matched} / ${v.total}</p>
+      ${hintRow(v)}
     </div>`;
   },
 
@@ -1109,7 +1148,7 @@ const VIEWS = {
       <div class="counter chunky">
         <span class="who ${v.done ? 'happy' : ''}" aria-hidden="true">${o.who}</span>
         <button class="bubble say-order" data-act="osay"><span aria-hidden="true">🔊</span>${
-          v.done ? 'ありがとう!' : v.hint ? `<span class="order-hint">${o.w.e} × ${o.n}</span>` : 'なにが ほしいかな?'}</button>
+          v.done ? 'ありがとう!' : 'なにが ほしいかな?'}</button>
       </div>
       <div class="basket chunky" aria-label="かご"><span class="b-ico" aria-hidden="true">🧺</span>${
         v.basket.length ? v.basket.map((w, k) => `<button class="b-item" data-act="unbasket" data-arg="${k}" aria-label="${w.ja}を もどす" ${v.done ? 'disabled' : ''}>${w.e}</button>`).join('')
@@ -1119,6 +1158,39 @@ const VIEWS = {
       <div class="row">${v.done
         ? `<button class="pill chunky" data-act="onext">つぎの おきゃくさん ▶</button>`
         : `<button class="pill chunky" data-act="handover" ${v.basket.length ? '' : 'disabled'}>はい、どうぞ!</button>`}</div>
+      ${v.done ? '' : hintRow(v)}
+    </div>`;
+  },
+
+  speak() {
+    const v = view, w = v.words[v.i];
+    const STATUS = {
+      ready: v.mode === 'repeat' ? 'おてほんを きいて、こえに だして いってみよう' : 'おてほんを きいたら 🎤を おして いってみよう',
+      rec: v.mode === 'auto' ? 'きいてるよ… いってみて!' : 'ろくおん ちゅう… いいおわったら ⏹ を おしてね',
+      check: v.mode === 'auto' ? (v.heard ? `「<b>${v.heard}</b>」って きこえたよ。もういちど いってみよう` : 'きこえなかったよ。もういちど いってみよう')
+        : v.mode === 'record' ? 'じぶんの こえと おてほん、にてるかな?' : 'いえたかな?',
+      ok: v.heard ? `「<b>${v.heard}</b>」って きこえたよ。じょうず!` : 'じょうずに いえたね!'
+    };
+    const judge = `<div class="row"><button class="pill chunky" data-act="spOk">いえた! ⭐</button>${v.mode === 'repeat' ? '<button class="pill alt chunky" data-act="spRetry">もういちど</button>' : ''}</div>`;
+    let ctrl;
+    if (v.phase === 'ok') ctrl = `<button class="pill chunky" data-act="spNext">つぎへ ▶</button>`;
+    else if (v.mode === 'repeat') ctrl = v.phase === 'check' ? judge : `<button class="pill chunky" data-act="spMic">✋ いってみたよ</button>`;
+    else ctrl = `<button class="mic chunky ${v.phase === 'rec' ? 'on' : ''}" data-act="spMic" aria-label="${v.phase === 'rec' ? 'とめる' : 'マイクで いう'}">${v.phase === 'rec' ? '⏹' : '🎤'}</button>`
+      + (v.phase === 'check' && (v.mode === 'record' || v.tries >= 2) ? judge : '');
+    return `<div class="speak">
+      ${progress(v.total, v.i)}
+      <div class="say-card chunky">
+        <span class="pic">${pic(w, true)}</span>
+        <span class="word">${hl(w.en, w.en[0])}</span>
+        ${state.showJa ? `<span class="ja-word">${w.ja}</span>` : ''}
+      </div>
+      <div class="row">
+        <button class="listen chunky" data-act="spModel"><span class="l-ico" aria-hidden="true">🔊</span>おてほん</button>
+        ${v.buf ? `<button class="listen mine chunky" data-act="spMine"><span class="l-ico" aria-hidden="true">🔁</span>じぶんの こえ</button>` : ''}
+      </div>
+      <p class="sp-status">${v.note ? v.note + '<br>' : ''}${STATUS[v.phase]}</p>
+      ${ctrl}
+      ${v.phase === 'ok' ? '' : hintRow(v)}
     </div>`;
   },
 
@@ -1138,7 +1210,8 @@ const VIEWS = {
       bubble = 'おなか すいた〜';
       body = `<button class="listen chunky" data-act="petSay"><span class="l-ico" aria-hidden="true">🔊</span>なにが たべたい?</button>
         <div class="opts n${v.options.length}">${v.options.map((w, k) =>
-          `<button class="opt chunky" data-act="feed" data-arg="${k}" aria-label="${w.ja}">${pic(w)}</button>`).join('')}</div>`;
+          `<button class="opt chunky" data-act="feed" data-arg="${k}" aria-label="${w.ja}">${pic(w)}</button>`).join('')}</div>
+        ${hintRow(v)}`;
     } else {
       bubble = 'げんき いっぱい!';
       body = `<p class="pet-msg">きょうの ごはんは おしまい。また あした あげてね</p>`;
@@ -1204,7 +1277,8 @@ const VIEWS = {
           <li>「ことばカード」で聞いて、まねして言ってみてから「きいてタッチ」で確かめる流れがおすすめです。</li>
           <li>1回10分くらいを目安に、いっしょに声に出して楽しんでください。</li>
           <li>ペットは⭐が5こで生まれ、⭐が増えるほど育ちます。ごはんは1日3回まで。毎日少しずつ続けるきっかけにどうぞ。</li>
-          <li>クイズ・ふうせんわり・もじならべをクリアするとコインがもらえ、きせかえのお店で使えます(本物のお金はかかりません)。アイテムの名前は英語で聞けます。</li>
+          <li>わからないときは「💡ヒント」を押すと、1回目は日本語の意味とゆっくりの読み上げ、2回目は答えが光ります(答えが光ったときは⭐はもらえません)。4〜5さいでは、まちがえるとヒントボタンが目立つように動きます。</li>
+          <li>ゲームをクリアするとコインがもらえ、きせかえのお店で使えます(本物のお金はかかりません)。アイテムの名前は英語で聞けます。</li>
           <li>ほし・シールの記録は、この端末のブラウザに保存されます。</li>
         </ul>
       </section>
@@ -1214,6 +1288,9 @@ const VIEWS = {
         <p class="note">4〜5さい:クイズの絵は3まい、もじならべはお手本つき。しょうがくせい:絵は4まい、お手本なしで、まぎらわしい文字が1つまざります。</p>
         <h3>よみあげの はやさ</h3>
         ${seg('rate', state.rate, [[0.7, 'ゆっくり'], [0.8, 'すこし ゆっくり'], [0.95, 'ふつう']])}
+        <h3>おしゃべりゲームの マイク</h3>
+        ${seg('mic', state.mic, [['record', 'ろくおんして くらべる'], ...(SR ? [['auto', 'じどうで はんてい']] : []), ['off', 'マイクを つかわない']])}
+        <p class="note">ろくおんして くらべる:声はこの端末の中だけで録音・再生し、保存も送信もしません。${SR ? '<br>じどうで はんてい:ブラウザの音声認識を使います。Chrome では声が Google の、Safari では Apple のサーバーに送られることがあります。子どもの発音は認識されにくいので、2回うまくいかないと「いえた!」で先に進めるようにしています。' : ''}<br>どの方法でも、マイクが使えないときは「まねして言うだけ」になります。</p>
         <h3>にほんごの いみを ひょうじ</h3>
         ${seg('ja', state.showJa ? 1 : 0, [[1, 'ひょうじする'], [0, 'かくす']])}
         <h3>きろくを けす</h3>
@@ -1261,7 +1338,7 @@ function setupSpellWord() {
   }
   let s = shuffle(letters), tries = 0;
   while (s.join('').startsWith(ans) && tries++ < 10) s = shuffle(letters);
-  Object.assign(view, { tiles: s.map(ch => ({ ch, used: false })), filled: [], done: false, firstTry: true, shake: false, checking: false });
+  Object.assign(view, { tiles: s.map(ch => ({ ch, used: false })), filled: [], done: false, firstTry: true, shake: false, checking: false, hintLv: 0, hintText: '' });
 }
 /* ふうせんわり */
 function startBalloon() {
@@ -1289,7 +1366,8 @@ function spawnWave() {
       y: H * (.72 + Math.random() * .3), sway: Math.random() * Math.PI * 2 };
   });
   v.speed = H / (state.level === 1 ? 10 : 6.5); // 1びょうに すすむ px
-  v.firstTry = true; v.locked = false;
+  v.firstTry = true; v.locked = false; v.hintLv = 0; v.hintText = '';
+  const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(v);
   Speech.say(popLine(target));
 }
 function balloonLoop(v) {
@@ -1320,7 +1398,12 @@ function startMole() {
   render(); window.scrollTo(0, 0);
   moleTarget(); moleTick(view);
 }
-function moleTarget() { Object.assign(view, { firstTry: true, locked: false, since: 0 }); Speech.say('#' + view.words[view.i].l); }
+function moleTarget() {
+  Object.assign(view, { firstTry: true, locked: false, since: 0, hintLv: 0, hintText: '', glow: false });
+  $$('.mole.glow').forEach(m => m.classList.remove('glow'));
+  const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(view);
+  Speech.say('#' + view.words[view.i].l);
+}
 function moleTick(v) {
   if (view !== v) return;
   const easy = state.level === 1, target = v.words[v.i];
@@ -1336,7 +1419,7 @@ function moleTick(v) {
     }
     btn.querySelector('.m-card').textContent = easy ? L.u : L.l;
     btn.querySelector('.m-face').textContent = '🐹';
-    btn.classList.add('up');
+    btn.classList.add('up'); btn.classList.toggle('glow', !!v.glow && L === target);
     const h = { L }; v.holes[k] = h;
     h.timer = setTimeout(() => { if (view === v && v.holes[k] === h) { btn.classList.remove('up'); v.holes[k] = null; } }, easy ? 2800 : 1900);
   }
@@ -1362,14 +1445,101 @@ function startShop() {
 }
 function setShelf() {
   const o = view.words[view.i];
-  Object.assign(view, { shelf: shuffle([o.w, ...sample(SHOP_FOODS.filter(f => f !== o.w), state.level === 1 ? 2 : 3)]), basket: [], firstTry: true, done: false, hint: false });
+  Object.assign(view, { shelf: shuffle([o.w, ...sample(SHOP_FOODS.filter(f => f !== o.w), state.level === 1 ? 2 : 3)]), basket: [], firstTry: true, done: false, hintLv: 0, hintText: '' });
 }
 function sayOrder() { const o = view.words[view.i]; Speech.say(orderLine(o.n, o.w)); }
+
+/* おしゃべり(こどもが いう) */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const canRecord = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+const speakMode = () => state.mic === 'auto' && SR ? 'auto' : state.mic !== 'off' && canRecord ? 'record' : 'repeat';
+function startSpeak() {
+  const max = state.level === 1 ? 6 : 10, seen = new Set();
+  const pool = ['animals', 'food', 'colors', 'vehicles', 'body'].flatMap(id => CAT[id].words)
+    .filter(w => w.en.length <= max && !seen.has(w.en) && seen.add(w.en));
+  view = { name: 'speak', total: 5, i: 0, earned: 0, words: sample(pool, 5), mode: speakMode() };
+  setupSay(); render(); window.scrollTo(0, 0);
+  Speech.say(view.words[0].en);
+}
+function setupSay() { Object.assign(view, { phase: 'ready', tries: 0, heard: '', buf: null, note: '', hintLv: 0, hintText: '' }); }
+function spSuccess(v) {
+  v.phase = 'ok'; v.earned++; addStars(1); sfx.good(); render(); burst($('.say-card'));
+  Speech.say(rnd(PRAISE));
+}
+// こどもの はつおんは みとめにくいので、にている ことばや ききまちがいやすい ことばも OK にする
+const HOMO = { eye: ['i', 'aye', 'hi'], two: ['to', 'too'], four: ['for'], eight: ['ate'], one: ['won', 'want'], ear: ['here', 'year', 'hear'],
+  red: ['read'], blue: ['blew'], nose: ['knows', 'no'], bear: ['bare', 'bar'], pig: ['big'], car: ['card'], bus: ['boss'], hand: ['and'],
+  rice: ['ice', 'price', 'rise'], ship: ['sheep', 'chip'], cat: ['cut', 'kat'], dog: ['dug', 'doug'], egg: ['ag'], milk: ['mill'] };
+const norm = t => t.toLowerCase().replace(/[^a-z ]/g, '').trim();
+function lev(a, b) {
+  const d = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    let prev = d[0]; d[0] = i;
+    for (let j = 1; j <= b.length; j++) { const t = d[j]; d[j] = Math.min(d[j] + 1, d[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = t; }
+  }
+  return d[b.length];
+}
+function heardOk(alts, target) {
+  const t = norm(target), ok = [t, ...(HOMO[t] || [])];
+  return alts.some(a => {
+    const s = norm(a);
+    if (ok.some(o => (' ' + s + ' ').includes(' ' + o + ' '))) return true;
+    return [s, ...s.split(' ')].some(wd => wd && 1 - lev(wd, t) / Math.max(wd.length, t.length) >= .6);
+  });
+}
+function listenSpeech(v) {
+  const sr = new SR(), wi = v.i; let got = false;
+  const stale = () => view !== v || v.i !== wi;
+  sr.lang = 'en-US'; sr.interimResults = false; sr.maxAlternatives = 5; v.sr = sr;
+  sr.onresult = e => {
+    got = true; if (stale()) return;
+    const alts = [...e.results[0]].map(a => a.transcript);
+    v.heard = alts[0] || '';
+    if (heardOk(alts, v.words[v.i].en)) spSuccess(v);
+    else { v.tries++; v.phase = 'check'; render(); Speech.say(v.words[v.i].en); }
+  };
+  sr.onerror = e => {
+    if (stale() || !/not-allowed|service-not-allowed|audio-capture|network/.test(e.error)) return;
+    got = true; v.mode = canRecord ? 'record' : 'repeat'; v.phase = 'ready';
+    v.note = 'じどう はんていが つかえないので、きりかえたよ'; render();
+  };
+  sr.onend = () => { if (!stale() && !got && v.phase === 'rec') { v.tries++; v.heard = ''; v.phase = 'check'; render(); } };
+  try { sr.start(); v.phase = 'rec'; render(); } catch (e) { v.mode = 'repeat'; v.phase = 'ready'; render(); }
+}
+async function recordVoice(v) {
+  const wi = v.i, stale = () => view !== v || v.i !== wi;
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) { if (!stale()) { v.mode = 'repeat'; v.note = 'マイクが つかえないので、まねして いってみてね'; v.phase = 'ready'; render(); } return; }
+  if (stale()) { stream.getTracks().forEach(t => t.stop()); return; }
+  const mr = new MediaRecorder(stream), chunks = []; v.mr = mr;
+  mr.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+  mr.onstop = async () => {
+    stream.getTracks().forEach(t => t.stop()); clearTimeout(v.recTimer);
+    if (stale()) return;
+    let buf = null;
+    try {
+      const ab = await new Blob(chunks, { type: mr.mimeType }).arrayBuffer();
+      buf = await new Promise((res, rej) => sfx.ctx().decodeAudioData(ab, res, rej));
+    } catch (e) {}
+    if (stale() || v.phase === 'ok') return;
+    v.buf = buf; v.phase = 'check';
+    render(); playMineThenModel(v);
+  };
+  mr.start(); v.phase = 'rec'; render();
+  v.recTimer = setTimeout(() => { if (mr.state === 'recording') mr.stop(); }, 4000);
+}
+async function playMineThenModel(v) {
+  if (!v.buf) { Speech.say(v.words[v.i].en); return; }
+  const id = ++Speech.seq; Speech.stop();
+  await Speech.playBuf(v.buf);
+  if (id === Speech.seq && view === v) Speech.one(v.words[v.i].en);
+}
 
 /* ペット */
 function setupMeal() {
   const foods = CAT.food.words, want = rnd(foods), n = state.level === 1 ? 3 : 4;
-  Object.assign(view, { want, options: shuffle([want, ...sample(foods.filter(w => w !== want), n - 1)]), firstTry: true, fed: false, happy: false });
+  Object.assign(view, { want, options: shuffle([want, ...sample(foods.filter(w => w !== want), n - 1)]), firstTry: true, fed: false, happy: false, hintLv: 0, hintText: '' });
 }
 function openPet() {
   view = { name: 'pet' };
@@ -1401,6 +1571,7 @@ const ACTS = {
     else if (arg === 'mole') startMole();
     else if (arg === 'memory') startMemory();
     else if (arg === 'shopgame') startShop();
+    else if (arg === 'speak') startSpeak();
     else go(arg);
   },
   cat(arg) {
@@ -1423,17 +1594,68 @@ const ACTS = {
       Speech.sayAll([w.en, rnd(PRAISE)]);
       setTimeout(() => {
         if (view !== v) return;
-        v.i++; v.firstTry = true; v.locked = false;
+        v.i++; v.firstTry = true; v.locked = false; v.hintLv = 0; v.hintText = '';
         if (v.i >= v.round.length) finish('quiz'); else { render(); sayQuestion(); }
       }, 1700);
     } else {
-      btn.classList.add('wrong'); btn.disabled = true; v.firstTry = false; sfx.bad();
+      btn.classList.add('wrong'); btn.disabled = true; v.firstTry = false; sfx.bad(); nudgeHint();
       Speech.sayAll(['Try again!', CAT[v.cat].q(q.answer)]);
     }
   },
   again() {
     const r = view.replay;
-    ({ quiz: () => startQuiz(r.cat), balloon: startBalloon, spell: startSpell, mole: startMole, memory: startMemory, shopgame: startShop })[r.mode]();
+    ({ quiz: () => startQuiz(r.cat), balloon: startBalloon, spell: startSpell, mole: startMole, memory: startMemory, shopgame: startShop, speak: startSpeak })[r.mode]();
+  },
+  spModel: () => Speech.say(view.words[view.i].en),
+  spMine: () => playMineThenModel(view),
+  spMic() {
+    const v = view; Speech.stop();
+    if (v.mode === 'repeat') { v.phase = 'check'; render(); return; }
+    if (v.phase === 'rec') { if (v.mode === 'auto') v.sr && v.sr.stop(); else if (v.mr && v.mr.state === 'recording') v.mr.stop(); return; }
+    v.mode === 'auto' ? listenSpeech(v) : recordVoice(v);
+  },
+  spOk() { const v = view; if (v.phase === 'check') spSuccess(v); },
+  spRetry() { const v = view; v.phase = 'ready'; render(); Speech.say(v.words[v.i].en); },
+  spNext() {
+    const v = view; v.i++;
+    if (v.i >= v.total) finish('speak');
+    else { const mode = v.mode; setupSay(); v.mode = mode; render(); Speech.say(v.words[v.i].en); }
+  },
+  hint() {
+    const v = view, lv = v.hintLv = (v.hintLv || 0) + 1;
+    const glow = el => el && el.classList.add('glow');
+    if (v.name === 'quiz') {
+      const q = v.round[v.i];
+      if (lv === 1) { v.hintText = `にほんごで「${q.answer.ja}」`; Speech.sayAll([CAT[v.cat].q(q.answer), q.answer.en], true); }
+      else { v.firstTry = false; v.hintText = 'ひかっている のが こたえだよ'; glow($$('.opt')[q.options.indexOf(q.answer)]); Speech.say(q.answer.en, true); }
+    } else if (v.name === 'balloon') {
+      const t = v.words[v.i];
+      if (lv === 1) { v.hintText = `「${t.ja}」の ふうせんを わろう`; v.speed *= .6; Speech.say(popLine(t), true); }
+      else { v.firstTry = false; v.hintText = 'ひかっている ふうせんだよ'; v.balloons.filter(b => b.alive && b.w === t).forEach(b => glow(b.el)); Speech.say(t.en, true); }
+    } else if (v.name === 'mole') {
+      const L = v.words[v.i];
+      if (lv === 1) { v.hintText = `「${L.u}」の もぐらを たたこう`; Speech.say('#' + L.l, true); }
+      else { v.firstTry = false; v.glow = true; v.hintText = 'ひかっている もぐらだよ'; v.holes.forEach((h, k) => { if (h && h.L === L) glow($$('.mole')[k]); }); }
+    } else if (v.name === 'memory') {
+      v.misses++; v.busy = true; v.hintText = lv >= 2 ? 'ちらっと みるのは おしまい' : 'あと 1かい みられるよ';
+      const els = $$('.mcard'); els.forEach(el => el.classList.add('up'));
+      setTimeout(() => { if (view !== v) return; els.forEach((el, k) => { if (!v.cards[k].up) el.classList.remove('up'); }); v.busy = false; }, 1500);
+    } else if (v.name === 'shopgame') {
+      const o = v.words[v.i];
+      if (lv === 1) { v.hintText = `「${o.w.ja}」を ${o.n}こ ほしいんだって`; Speech.say(orderLine(o.n, o.w), true); }
+      else { v.firstTry = false; v.hintText = `${o.w.e} × ${o.n}`; }
+    } else if (v.name === 'spell') {
+      const ans = v.words[v.i].en;
+      if (lv === 1) { v.hintText = 'ゆっくり きいてみよう'; Speech.sayAll([ans, ...[...ans].map(ch => '#' + ch)], true); }
+      else { v.firstTry = false; v.hintText = 'ひかっている もじを えらんでね'; }
+    } else if (v.name === 'pet') {
+      if (lv === 1) { v.hintText = `「${v.want.ja}」が たべたいみたい`; Speech.say(wantLine(v.want), true); }
+      else { v.firstTry = false; v.hintText = 'ひかっている ものだよ'; glow($$('.opt')[v.options.indexOf(v.want)]); }
+    } else if (v.name === 'speak') {
+      v.hintText = 'ゆっくり きいて、まねしてみよう'; Speech.say(v.words[v.i].en, true);
+    }
+    if (v.name === 'spell') render();
+    else { const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(v); }
   },
   msay: () => Speech.say('#' + view.words[view.i].l),
   whack(arg, btn) {
@@ -1456,7 +1678,7 @@ const ACTS = {
       }, 1200);
     } else {
       btn.classList.remove('miss'); void btn.offsetWidth; btn.classList.add('miss');
-      v.firstTry = false; sfx.bad(); Speech.say('#' + target.l);
+      v.firstTry = false; sfx.bad(); nudgeHint(); Speech.say('#' + target.l);
     }
   },
   flip(arg) {
@@ -1505,7 +1727,7 @@ const ACTS = {
       render(); burst($('.who'));
       Speech.sayAll(['Here you are!', 'Thank you!']);
     } else {
-      v.firstTry = false; v.hint = true; sfx.bad(); render();
+      v.firstTry = false; sfx.bad(); render(); nudgeHint();
       Speech.sayAll(['Try again!', orderLine(o.n, o.w)]);
     }
   },
@@ -1534,7 +1756,7 @@ const ACTS = {
       }, 1400);
     } else {
       el.classList.remove('wobble'); void el.offsetWidth; el.classList.add('wobble');
-      v.firstTry = false; sfx.bad(); Speech.say(popLine(target));
+      v.firstTry = false; sfx.bad(); nudgeHint(); Speech.say(popLine(target));
     }
   },
   pet: () => openPet(),
@@ -1569,7 +1791,7 @@ const ACTS = {
       render(); burst($('.pet-body'));
       Speech.sayAll(mealsLeft() ? ['Yummy! Thank you!'] : ['Yummy! Thank you!', "I'm full! See you tomorrow!"]);
     } else {
-      btn.classList.add('wrong'); btn.disabled = true; v.firstTry = false; sfx.bad();
+      btn.classList.add('wrong'); btn.disabled = true; v.firstTry = false; sfx.bad(); nudgeHint();
       Speech.sayAll(['No, thank you.', wantLine(v.want)]);
     }
   },
@@ -1594,7 +1816,7 @@ const ACTS = {
         let m = 0; while (v.tiles[v.filled[m]].ch === ans[m]) m++;
         v.filled.slice(m).forEach(k => { v.tiles[k].used = false; });
         v.filled = v.filled.slice(0, m); v.shake = false; v.checking = false;
-        render(); Speech.say(ans);
+        render(); nudgeHint(); Speech.say(ans);
       }, 700);
     }
   },
@@ -1612,6 +1834,7 @@ const ACTS = {
   },
   level(arg) { state.level = Number(arg); save(); render(); },
   rate(arg) { state.rate = Number(arg); save(); render(); Speech.say('Hello! Let’s play!'); },
+  mic(arg) { state.mic = arg; save(); render(); },
   ja(arg) { state.showJa = arg === '1'; save(); render(); },
   resetAsk() { view.confirmReset = true; render(); },
   resetNo() { view.confirmReset = false; render(); },
