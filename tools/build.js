@@ -15,7 +15,7 @@ fs.mkdirSync(audioDir, { recursive: true });
 const tmp = path.join(require('os').tmpdir(), 'eigo-clip.aiff');
 
 const clips = {};
-for (const text of phrases()) {
+for (const text of [...phrases(), ...require('../src/missions-data.js').phrases()]) {
   const key = clipKey(text);
   const out = path.join(audioDir, key + '.m4a');
   if (!fs.existsSync(out)) {
@@ -32,7 +32,7 @@ const body = Object.entries(clips).map(([k, v]) => `${JSON.stringify(k)}:"${v}"`
 // 学習エンジン(src/catalog.js, src/engine.js)を <script> として埋め込む
 const MARK = /<!--LEARNING-ENGINE:[^>]*-->/;
 if (!MARK.test(src)) throw new Error('src/app.html に LEARNING-ENGINE の目印がありません');
-const engineJs = ['catalog.js', 'engine.js', 'parent.js'].map(f => {
+const engineJs = ['catalog.js', 'engine.js', 'parent.js', 'missions-data.js', 'missions.js'].map(f => {
   const code = fs.readFileSync(path.join(root, 'src', f), 'utf8');
   if (/<\/script/i.test(code)) throw new Error(`src/${f} に </script> が含まれています`);
   return `<script>\n${code}</script>`;

@@ -59,7 +59,7 @@ test('catalog: 22 Can-dos, flags and levels follow the spec', () => {
     if (c.level <= 2 && (c.skill === 'reading' || c.skill === 'writing')) assert.equal(c.required, false, `${c.id} must not be required`);
   }
   assert.deepEqual(C.CAN_DOS.filter(c => c.level === 1 && c.required).map(c => c.id), ['L1_LI_01', 'L1_LI_02', 'L1_SP_01']);
-  assert.deepEqual([...C.ASSESSABLE].sort(), ['L1_LI_01', 'L1_RE_01', 'L2_LI_02']);
+  assert.deepEqual([...C.ASSESSABLE].sort(), C.CAN_DOS.map(c => c.id).sort());
   for (const g of Object.values(C.GAMES)) for (const id of g.canDoIds) assert.ok(C.BY_ID[id]);
 });
 
@@ -456,7 +456,7 @@ test('dashboard: fresh install shows no records, not 0% ability', () => {
   assert.equal(s.requiredTotal, 3);
   assert.equal(s.requiredMastered, 0);
   assert.equal(s.skills.listening.assessed, 0);
-  assert.equal(s.skills.speaking.assessable, 0, 'no game can assess speaking yet');
+  assert.equal(s.skills.speaking.assessable, 1, 'the greeting mission accepts explicit parent observation');
 });
 
 test('dashboard: score >= 85 without the other conditions is "confirm pending"', () => {

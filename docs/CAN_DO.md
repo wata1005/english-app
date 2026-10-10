@@ -80,3 +80,8 @@ When the score is ≥85 but conditions 2–4 are not yet met, the dashboard show
 - The level changes **only** when the parent approves. Never automatic.
 - **[Draft: Claude Code]** The parent may also change the level manually at any time (for example, a child who already speaks some English). Each change is stored in `levelHistory` with the reason (`recommended_approved` / `parent_manual`).
 - Denominators count required Can-dos only; `not_assessed` is shown as `未評価`, never as zero ability. Do not represent internal progress as an IELTS band or CEFR certification.
+
+## 段階Dの現在の評価入口（2026-10-10）
+上表のStage D項目に、`CURRICULUM.md`「段階D：おはなしミッション」の入口を追加した。`ASSESSABLE` は保護者観察を含む入口があることを意味し、自動判定可能であることを意味しない。全SP、自力CVC読み、自力文読みは本人申告だけでは評価対象にならず、保護者の明示的な確認を必要とする。
+
+L2_RE_01では単語の最初の音とm/s/fの表記の対応を確認する。文字名を選ぶL1_RE_01とは出題形式・場面を分ける。L3_RE_01の確認では、語がまだ未練習で、音をつないで読めたことを保護者が確認する。L3_RE_02は読み上げられた物語の順序理解として表記し、読解と混同しない。WRはスタンプ・語句タイルの構成方法を出題形式に残し、自立した手書きの証明とはしない。

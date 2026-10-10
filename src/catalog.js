@@ -53,6 +53,11 @@
   // evidence: 'action' = can prove a Can-do; 'participation' / 'exposure' = never a mastery success.
   // Wiring into the games happens in Stage B; Stage A only defines the contract.
   const GAMES = {
+    mission_listen: { evidence: 'action', canDoIds: ['L1_LI_02', 'L2_LI_01', 'L3_LI_01', 'L4_LI_01'], skill: 'listening', scene: () => 'listen:picnic', promptType: () => 'action' },
+    mission_talk: { evidence: 'parent_observed', canDoIds: ['L1_SP_01', 'L2_SP_01', 'L2_SP_02', 'L3_SP_01', 'L3_SP_02', 'L4_SP_01', 'L4_SP_02'], skill: 'speaking', scene: () => 'talk:routine', promptType: () => 'meaningful_response' },
+    mission_phonics: { evidence: 'action', canDoIds: ['L1_RE_01', 'L2_RE_01', 'L3_RE_01'], skill: 'reading', scene: () => 'phonics:letters', promptType: () => 'choice' },
+    mission_story: { evidence: 'action', canDoIds: ['L3_RE_02', 'L4_LI_01', 'L4_RE_01'], skill: 'reading', scene: () => 'story:narrated', promptType: () => 'story' },
+    mission_message: { evidence: 'action', canDoIds: ['L1_WR_01', 'L2_WR_01', 'L3_WR_01', 'L4_WR_01'], skill: 'writing', scene: () => 'message:stamps', promptType: () => 'stamp' },
     quiz: { evidence: 'action', canDoIds: ['L1_LI_01'], skill: 'listening', scene: c => `quiz:${c}`,
       promptType: c => (c === 'colors' ? 'which_one' : c === 'numbers' ? 'find' : 'where_is') },
     balloon: { evidence: 'action', canDoIds: ['L1_LI_01'], skill: 'listening', scene: c => `balloon:${c}`, promptType: () => 'pop_the' },
@@ -68,7 +73,7 @@
   };
 
   // Which Can-dos currently have a place to collect evidence (used to explain "not assessable yet").
-  const ASSESSABLE = new Set(Object.values(GAMES).flatMap(g => (g.evidence === 'action' ? g.canDoIds : [])));
+  const ASSESSABLE = new Set(Object.values(GAMES).flatMap(g => (['action', 'parent_observed'].includes(g.evidence) ? g.canDoIds : [])));
 
   return Object.freeze({ LEVELS, SKILLS, CAN_DOS, BY_ID, GAMES, ASSESSABLE });
 });

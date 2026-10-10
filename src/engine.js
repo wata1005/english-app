@@ -490,8 +490,8 @@
       for (const { c, cp } of targets) {
         const reason = cp.nextReviewAt && cp.nextReviewAt <= today ? 'review' : cp.status === 'discovering' ? 'new' : 'practice';
         for (const [game, g] of Object.entries(catalog.GAMES)) {
-          if (g.evidence === 'action' && g.canDoIds.includes(c.id) && !out.some(o => o.game === game)) {
-            out.push({ game, category: game === 'quiz' ? 'animals' : game === 'mole' ? 'letters' : 'food', canDoId: c.id, reason });
+          if (['action', 'parent_observed'].includes(g.evidence) && g.canDoIds.includes(c.id) && !out.some(o => o.game === game)) {
+            out.push({ game, level: c.level, category: game === 'quiz' ? 'animals' : game === 'mole' ? 'letters' : 'food', canDoId: c.id, reason });
             break;
           }
         }

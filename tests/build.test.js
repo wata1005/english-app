@@ -13,7 +13,7 @@ test('16. tools/build.js regenerates index.html with the engine inlined', () => 
   assert.ok(html.startsWith('<!doctype html>'));
   assert.ok(!/<!--LEARNING-ENGINE/.test(html), 'placeholder replaced');
   assert.ok(!html.includes('/*CLIPS*/'), 'audio clips embedded');
-  for (const f of ['catalog.js', 'engine.js', 'parent.js']) {
+  for (const f of ['catalog.js', 'engine.js', 'parent.js', 'missions-data.js', 'missions.js']) {
     const code = fs.readFileSync(path.join(root, 'src', f), 'utf8');
     assert.ok(html.includes(`<script>\n${code}</script>`), `src/${f} is inlined verbatim`);
   }

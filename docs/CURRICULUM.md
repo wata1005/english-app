@@ -48,7 +48,7 @@ Taps without listening do not prove understanding: random taps that succeed afte
 6. Magic message: stamps -> letter tracing -> phrase tiles -> optional dictated/handwritten message; communicative intent, not handwriting perfection.
 7. Greeting routine **[Draft: Claude Code]**: a character greets the child each session (`Hello!`, `Bye!`, `Thank you!`) to give L1_SP_01 a home.
 
-Until this content exists, Level 1 cannot be fully assessed (only L1_LI_01 and L1_RE_01 have evidence sources). The parent dashboard must say so plainly.
+Stage B initially offered evidence only for L1_LI_01 and L1_RE_01. Stage D adds the scripted missions described below; speaking and independent reading still require explicit parent observation. An available evidence source does not by itself establish mastery.
 
 ## UI language policy **[Decided by parent, 2026-10-10]**
 - Existing caption settings (`caption`: off / English / English + reading + meaning, `capHide`) and the Japanese hint stay exactly as the family set them. Nothing is changed silently, for existing or new installs.
@@ -68,3 +68,20 @@ All existing games, stars, coins, pet, outfits, captions and audio work; no chan
 
 ## 段階C 完了範囲（2026-10-10）
 ユーザーの段階Cへの移行承認により、保護者向けダッシュボード・入場確認・English-only表示を追加。段階Bの未回答ルールを維持する。仕様と実装範囲は PARENT_DASHBOARD.md「段階C 実装」を参照。mainへのマージと段階Dへの移行は未実施。
+
+## 段階D：おはなしミッション（2026-10-10）
+ホームに「おはなしミッション」を追加。1回は3つのおてつだい。いつでも休止・スキップでき、発話・自力読みは保護者確認なしでも参加して先へ進める。新規音声はビルド時に埋め込み、端末の音声認識・ネットワーク・APIキーを必要としない。
+
+| 遊び | 内容 | 記録 |
+|---|---|---|
+| きいておてつだい | 絵を選び、届ける相手／箱の上・下・中をタッチ。レベル3は2つの動作の順序、レベル4は短い状況説明から援助する。ピクニック・庭の2場面 | L1_LI_02 / L2_LI_01 / L3_LI_01 / L4_LI_01 |
+| おしゃべりごっこ | あいさつ・品物のお願い・質問への応答・動作／位置の説明・理由・質問。固定された安全な場面と相手の返事 | 子どもの「いえた」は参加。保護者が意味を確認した場合のみ各レベルのSP証拠 |
+| おとのおにわ | L1は文字名を聞いて選ぶ。L2は単語を聞いて最初の音に対応するm/s/fを選ぶ。L3以降は絵なしのCVC語を読む | L1_RE_01 / L2_RE_01。L3_RE_01は保護者が自力の読み・音の結合を確認した場合のみ |
+| おはなしのもり | 3つのお話を各3ページで聞き、絵の出来事を並べる。L4では短い課題場面と絵なしの自力読みを選べる | L1–2は参加。L3_RE_02は聞いた話の理解であり独立した読解ではない。L4_LI_01、自力読みは保護者確認時のみL4_RE_01 |
+| まほうのおてがみ | L1は悲しい友だち／誕生日／別れの状況に合うスタンプを届ける。L2以降は語句を並べて目的に合うお願いを送り、相手が返事をする | L1_WR_01 / L2_WR_01 / L3_WR_01 / L4_WR_01。手書き能力ではなく、スタンプ・語句タイルの意味構成 |
+
+ミッション内容は `src/missions-data.js`、表示・操作・記録は `src/missions.js`。学習レベルに合わせた内容を出し、既存の年齢・難易度設定は変更しない。読み書きは任意の遊びとして常に別入口に置く。レベル変更は引き続き保護者が承認する。
+
+新しい遊びの報酬は完了した回答ごとに星1個、3つの問題を進み終えたときに回答が1つ以上あればコイン5枚。スキップだけの場合は報酬・完了ミッション数を増やさない。自己申告の発話・読みも参加の報酬は得られるが、習得の証拠にはしない。既存ゲームの報酬計算は変更しない。
+
+発話の自由なAI対話・自動意味判定・音声収集は実装しない。単語先頭の音を扱う遊びは単語音声を使い、文字名と音素を同一視しない。自力読みの保護者確認では、未知・未練習の語の音を結合できたか、単語全体の暗記やお手本の復唱ではないかを確認する。段階Eとmainへのマージは未実施。

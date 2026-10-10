@@ -214,6 +214,25 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
 .seg .danger { background: var(--tomato); color: var(--on-accent); box-shadow: none; }
 .note { font-size: .9rem; color: var(--ink-soft); margin: 0; }
 
+/* Missions use pictures and taps, with optional printed language. */
+.mission-entry { padding: 22px; display: flex; flex-direction: column; gap: 8px; font-family: var(--font-ja); background: var(--good-soft); }
+.mission-entry span { font-size: 2.5rem; }
+.mission-entry b { font-size: 1.4rem; }
+.mission-options { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.mission-choice { min-width: 64px; min-height: 64px; padding: 12px; font-size: 2.5rem; }
+.mission-word { min-height: 48px; padding: 10px 14px; font-size: 1.25rem; }
+.mission-scene { text-align: center; font-size: clamp(2.5rem, 10vw, 4.5rem); margin: 8px 0; }
+.mission-input, .mission-model, .read-alone { text-align: center; font-size: 1.6rem; overflow-wrap: anywhere; padding: 12px; border-radius: 16px; background: var(--sky); }
+.mission-feedback { padding: 14px; background: var(--good-soft); border-radius: 16px; }
+.spatial-picture { position: relative; display: inline-block; width: 80px; height: 100px; vertical-align: middle; font-size: 2rem; }
+.spatial-box { position: absolute; left: 20px; top: 34px; font-size: 2.5rem; }
+.spatial-object { position: absolute; font-size: 1.6rem; }
+.spatial-picture[data-place="on"] .spatial-object { left: 28px; top: 5px; }
+.spatial-picture[data-place="under"] .spatial-object { left: 28px; top: 70px; }
+.spatial-picture[data-place="in"] .spatial-object { left: 28px; top: 38px; }
+.mission-scene[data-action="run"] { animation: missionRun 1.6s ease-in-out infinite alternate; }
+@keyframes missionRun { from { transform: translateX(-20px); } to { transform: translateX(20px); } }
+
 /* Parent dashboard: wrap labels at narrow mobile sizes. */
 .parent-tabs { gap: 8px; }
 .parent-tabs button { flex: 1 1 130px; padding: 12px 10px; }
@@ -832,7 +851,7 @@ const progress = (n, i) => `<div class="progress" aria-label="${i + 1} / ${n}">$
 /* ---------- views ---------- */
 const app = $('#app');
 let view = { name: 'home' };
-const TITLES = { speak: 'おしゃべり', mole: 'もぐらたたき', memory: 'しんけいすいじゃく', shopgame: 'おみせやさん', closet: 'きせかえ', balloon: 'ふうせんわり', pet: 'ペット', pick: 'どれに する?', cards: 'ことば カード', quiz: 'きいて タッチ', abc: 'ABC', spell: 'もじ ならべ', result: 'できたね!', stickers: 'シール ちょう', parent: 'おうちの かたへ' };
+const TITLES = { speak: 'おしゃべり', mole: 'もぐらたたき', memory: 'しんけいすいじゃく', shopgame: 'おみせやさん', closet: 'きせかえ', balloon: 'ふうせんわり', pet: 'ペット', pick: 'どれに する?', cards: 'ことば カード', quiz: 'きいて タッチ', abc: 'ABC', spell: 'もじ ならべ', result: 'できたね!', stickers: 'シール ちょう', missions: 'おはなし ミッション', mission: 'おはなし ミッション', parent: 'おうちの かたへ' };
 
 function go(name, params = {}) { view = { name, ...params }; render(); window.scrollTo(0, 0); }
 
@@ -849,6 +868,7 @@ function render() {
 }
 
 const VIEWS = {
+  missions: missionHub, mission: missionScreen,
   home() {
     const left = 5 - state.stars % 5;
     const allDone = Math.floor(state.stars / 5) >= STICKERS.length;
@@ -870,6 +890,7 @@ const VIEWS = {
           <span class="hp-b">${petStage() === 0 ? 'あたためてね' : mealsLeft() ? 'おなか すいた〜' : 'げんき いっぱい!'}<br><small>${pet.ja}</small></span>
         </button>
       </section>
+      <button class="mission-entry chunky" data-act="missionHub"><span>🧺 📖 💌</span><b>おはなし ミッション</b><small>きいて、うごいて、おてつだい！</small></button>
       <h2 class="sec">ゲーム <span class="en">Games</span></h2>
       <nav class="modes" aria-label="ゲームを えらぶ">
         ${tile('quiz', 'きいて タッチ', 'Listen & Touch', '👂', '--ocean')}
@@ -1207,11 +1228,11 @@ const WORD_CAT = new Map(CATS.flatMap(c => c.words.map(w => [w, c.id])));
 // 1もんごとの ようす: もういちど きいたか / まちがえたか / いつ はじまったか
 // openQuestion: こたえて いない もんだい。こたえずに がめんを はなれたら「みかいとう」として きろくする
 let openQuestion = null;
-function newQuestion(v, game, cat, itemId) {
+function newQuestion(v, game, cat, itemId, evidence = {}) {
   // Some games set up the next screen before render() can detect leaving the old one.
   logUnanswered();
   v.ev = { replayed: false, mistake: false, start: Date.now() };
-  openQuestion = { v, game, cat, itemId };
+  openQuestion = { v, game, cat, itemId, evidence };
 }
 function logUnanswered() {
   const q = openQuestion; openQuestion = null;
@@ -1220,8 +1241,9 @@ function logUnanswered() {
     const g = LearningCatalog.GAMES[q.game];
     learn.recordAttempt({
       id: LearningEngine.newAttemptId(), taskId: `${q.game}:${q.cat}`, canDoIds: g.canDoIds, timestamp: new Date().toISOString(),
-      sceneId: g.scene(q.cat), itemId: q.itemId, promptType: g.promptType(q.cat), completed: false, verified: false,
-      firstTry: false, unanswered: true, method: 'action', recognition: 'not_needed', support: questionSupport(q.v), skill: g.skill
+      sceneId: g.scene(q.cat), itemId: q.itemId, promptType: g.promptType(q.cat),
+      firstTry: false, method: 'action', recognition: 'not_needed', support: q.v.name === 'mission' ? missionSupport(q.v) : questionSupport(q.v), skill: g.skill,
+      ...q.evidence, unanswered: true, completed: false, verified: false
     });
   } catch (e) { /* ignore */ }
 }
@@ -1559,7 +1581,7 @@ function finish(mode) {
 }
 
 const ACTS = {
-  ...parentActions,
+  ...parentActions, ...missionActions,
   home: () => go('home'),
   go: arg => go(arg),
   mode(arg) {

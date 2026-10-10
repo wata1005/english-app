@@ -35,6 +35,8 @@ test('Stage C: gate, dashboard, settings, approval, separate resets and English 
     ACTS.parentTab('history'); out.history = text();
     ACTS.parentTab('growth'); out.growth = text();
     out.recommendations = learn.recommendMissions();
+    ACTS.parentPlay('0'); out.recommendedView = { name: view.name, mode: view.mode, level: view.level };
+    unlock();
     out.beforeApprove = learn.getLevel(); ACTS.approveCurriculum(); out.noPrematureApprove = learn.getLevel();
     ACTS.parentTab('settings'); ACTS.curriculumAsk('2'); out.beforeManualConfirm = learn.getLevel();
     ACTS.curriculumNo(); out.cancelledLevel = learn.getLevel();
@@ -61,14 +63,15 @@ test('Stage C: gate, dashboard, settings, approval, separate resets and English 
   assert.deepEqual(errors, []);
   assert.match(r.gate, /大人の方/); assert.equal(r.blocked, true); assert.equal(r.wrongGate, true);
   assert.match(r.fresh, /まだ学習記録がありません/); assert.match(r.fresh, /未評価/); assert.match(r.fresh, /CEFR認定ではありません/);
-  assert.match(r.abilities, /これから追加される遊びで確認します/);
+  assert.match(r.abilities, /評価対象 0回/);
   assert.equal(r.overlayLegacy, true); assert.deepEqual(r.enCard, { kana: false, ja: false });
   assert.deepEqual(r.enCaption, { kana: false, ja: false, en: true }); assert.equal(r.visibleSupport, 2);
   assert.equal(r.enHint, 'Listen slowly.'); assert.equal(r.enHintSupport, 1);
   assert.equal(r.restoredLegacy, true); assert.equal(r.restoredCard, true); assert.equal(r.jaHintSupport, 2);
   assert.match(r.history, /未回答（評価対象外）/); assert.match(r.history, /ヒントあり/); assert.match(r.history, /発話を確認できませんでした/);
   assert.match(r.growth, /必須項目の習得 0 \/ 3/); assert.match(r.growth, /参加・練習/);
-  assert.equal(r.recommendations[0].category, 'animals');
+  assert.equal(r.recommendations[0].game, 'mission_listen');
+  assert.deepEqual(r.recommendedView, { name: 'mission', mode: 'listen', level: 1 });
   assert.equal(r.beforeApprove, 1); assert.equal(r.noPrematureApprove, 1);
   assert.equal(r.beforeManualConfirm, 1); assert.equal(r.cancelledLevel, 1); assert.equal(r.manualLevel, 2);
   assert.match(r.levelHistory, /保護者が手動で変更/);

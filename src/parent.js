@@ -3,7 +3,7 @@
 const PARENT_TABS = { growth: '成長', abilities: 'できるようになったこと', history: '学習履歴', settings: '設定' };
 const SKILL_NAMES = { listening: '聞いてわかる', speaking: '話して伝える', reading: '読んでわかる', writing: '書いて伝える' };
 const STATUS_NAMES = { discovering: '未評価・記録を集めています', developing: '練習中', practicing: '場面を広げて練習中', mastered: '習得済み' };
-const GAME_NAMES = { quiz: 'きいてタッチ', balloon: 'ふうせんわり', mole: 'もぐらたたき', shopgame: 'おみせやさん',
+const GAME_NAMES = { mission_listen: 'きいておてつだい', mission_talk: 'おしゃべりごっこ', mission_phonics: 'おとのおにわ', mission_story: 'おはなしのもり', mission_message: 'まほうのおてがみ', quiz: 'きいてタッチ', balloon: 'ふうせんわり', mole: 'もぐらたたき', shopgame: 'おみせやさん',
   pet: 'ペットのごはん', speak: 'おしゃべり', cards: 'ことばカード', abc: 'ABC', spell: 'もじならべ', memory: 'しんけいすいじゃく' };
 const escapeHtml = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const parentDate = ts => Number.isNaN(new Date(ts).getTime()) ? '日時不明' : new Date(ts).toLocaleDateString('ja-JP');
@@ -28,7 +28,7 @@ function parentScreen() {
   const summary = learn.getDashboardSummary();
   return `<nav class="seg parent-tabs" aria-label="保護者メニュー">${Object.entries(PARENT_TABS).map(([key, name]) => `<button data-act="parentTab" data-arg="${key}" aria-pressed="${tab === key}">${name}</button>`).join('')}</nav>
     <p class="note">記録はこの端末・このブラウザだけに保存されます。別端末との同期はなく、現在はお子さま1人分です。</p>
-    ${summary.storageWarning || learningStorageUnavailable ? '<p class="parent-warning" role="alert">保存容量が足りないか保存機能を利用できないため、今日の記録の一部を保存できませんでした。</p>' : ''}${content}`;
+    ${missionObservationPanel()}${summary.storageWarning || learningStorageUnavailable ? '<p class="parent-warning" role="alert">保存容量が足りないか保存機能を利用できないため、今日の記録の一部を保存できませんでした。</p>' : ''}${content}`;
 }
 function parentGrowth() {
   const s = learn.getDashboardSummary();
@@ -40,14 +40,14 @@ function parentGrowth() {
   const needs = s.needsReview.filter(id => { const c = LearningCatalog.BY_ID[id]; return c.critical && learn.getCanDoProgress(id).status === 'mastered'; });
   return parentPanel(`レベル${s.level}：${escapeHtml(s.levelName)}`, `<p class="note">アプリ内学習レベル（CEFR認定ではありません）</p>
     ${s.hasRecords ? `<p>必須項目の習得 ${s.requiredMastered} / ${s.requiredTotal}項目</p>` : '<p>まだ学習記録がありません</p>'}
-    <p class="note">記録のない項目は未評価です。現在の遊びだけでは、レベルの必須項目すべてを確認できません。</p>
+    <p class="note">記録のない項目は未評価です。発話・自力読みは保護者の確認が必要です。参加だけで習得にはなりません。</p>
     <p>確認待ち ${s.confirmPending}項目</p>${s.levelUpRecommended ? '<p>次のレベルをおすすめします。必須項目すべての習得が確認できました。</p><div class="seg"><button data-act="approveCurriculum">承認する</button></div>' : ''}`)
     + parentPanel('4つの力', `<div class="skill-grid">${skills}</div><p class="note">技能間の数値は共通のテストによる比較ではありません。</p>`)
     + parentPanel('最近できるようになったこと', recent)
     + parentPanel('次のおすすめ', parentRecommendations())
     + (needs.length ? parentPanel('復習おすすめ', `<ul>${needs.map(id => `<li>${escapeHtml(LearningCatalog.BY_ID[id].ja)}</li>`).join('')}</ul>`) : '')
     + parentPanel('この7日間', `<p>操作時間を記録できた日 ${s.weeklyActiveDays}日／操作の間から見積もった時間 約${Math.round(s.weeklyEngagedSeconds / 60)}分</p>
-      <p class="note">2分以上操作がない間は数えません。正確な利用時間ではありません。ミッションは今後追加予定です。長く遊ぶことを目標にせず、無理なく楽しんでください。</p>`);
+      <p class="note">2分以上操作がない間は数えません。正確な利用時間ではありません。おてつだいを終えたミッション ${s.weeklyMissionsCompleted}回。長く遊ぶことを目標にせず、無理なく楽しんでください。</p>`);
 }
 function parentEvidenceSource(id) {
   const attempts = learn.snapshot().attempts.filter(a => a.canDoIds.includes(id) && !a.unanswered && a.verified);
@@ -57,7 +57,7 @@ function parentEvidenceSource(id) {
 function parentRecommendations() {
   const recs = learn.recommendMissions();
   return recs.length ? `<ul>${recs.map((r, i) => `<li>${escapeHtml(LearningCatalog.BY_ID[r.canDoId].ja)}<br>
-    <button class="parent-play" data-act="parentPlay" data-arg="${i}">${GAME_NAMES[r.game]}${CAT[r.category] ? '・' + CAT[r.category].ja : ''}であそぶ</button>
+    <button class="parent-play" data-act="parentPlay" data-arg="${i}">${GAME_NAMES[r.game]}${r.game.startsWith('mission_') ? '・レベル' + r.level : CAT[r.category] ? '・' + CAT[r.category].ja : ''}であそぶ</button>
     <small>${r.reason === 'review' ? '復習の時期です' : '無理なく試してみましょう'}</small></li>`).join('')}</ul><p class="note">ホームにもおすすめを表示します。どの遊びも自由に選べます。</p>` : '<p>今のレベルのおすすめはありません。好きな遊びを楽しんでください。</p>';
 }
 function parentAbilities() {
@@ -137,7 +137,7 @@ const parentActions = {
   learningResetAsk() { view.confirmLearningReset = true; render(); },
   learningResetNo() { view.confirmLearningReset = false; render(); },
   learningResetYes() { if (!view.confirmLearningReset) return; learn.resetLearningProgress({ confirm: true }); view.confirmLearningReset = false; render(); toast('学習記録を消しました'); },
-  parentPlay(arg) { const r = learn.recommendMissions()[Number(arg)]; if (!r) return; if (r.game === 'quiz') startQuiz(r.category); else ACTS.mode(r.game); }
+  parentPlay(arg) { const r = learn.recommendMissions()[Number(arg)]; if (!r) return; if (r.game.startsWith('mission_')) startMission(r.game.slice(8), r.canDoId === 'L4_RE_01', r.level); else if (r.game === 'quiz') startQuiz(r.category); else ACTS.mode(r.game); }
 };
 function guardParentActions() {
   const actions = [...Object.keys(parentActions).filter(k => k !== 'parentGate'), 'level', 'rate', 'mic', 'caption', 'capHide', 'ja', 'resetAsk', 'resetNo', 'resetYes'];
