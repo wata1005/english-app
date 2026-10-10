@@ -819,6 +819,7 @@ const TITLES = { speak: 'おしゃべり', mole: 'もぐらたたき', memory: '
 function go(name, params = {}) { view = { name, ...params }; render(); window.scrollTo(0, 0); }
 
 function render() {
+  checkLeftQuestion();
   const home = view.name === 'home';
   app.innerHTML = `
     <header class="bar">
@@ -1182,7 +1183,39 @@ const learnStore = (() => {
 const learn = LearningEngine.createEngine({ storage: learnStore, catalog: LearningCatalog });
 const WORD_CAT = new Map(CATS.flatMap(c => c.words.map(w => [w, c.id])));
 // 1もんごとの ようす: もういちど きいたか / まちがえたか / いつ はじまったか
-function newQuestion(v) { v.ev = { replayed: false, mistake: false, start: Date.now() }; }
+// openQuestion: こたえて いない もんだい。こたえずに がめんを はなれたら「みかいとう」として きろくする
+let openQuestion = null;
+function newQuestion(v, game, cat, itemId) {
+  // Some games set up the next screen before render() can detect leaving the old one.
+  logUnanswered();
+  v.ev = { replayed: false, mistake: false, start: Date.now() };
+  openQuestion = { v, game, cat, itemId };
+}
+function logUnanswered() {
+  const q = openQuestion; openQuestion = null;
+  if (!q) return;
+  try {
+    const g = LearningCatalog.GAMES[q.game];
+    learn.recordAttempt({
+      id: LearningEngine.newAttemptId(), taskId: `${q.game}:${q.cat}`, canDoIds: g.canDoIds, timestamp: new Date().toISOString(),
+      sceneId: g.scene(q.cat), itemId: q.itemId, promptType: g.promptType(q.cat), completed: false, verified: false,
+      firstTry: false, unanswered: true, method: 'action', recognition: 'not_needed', support: questionSupport(q.v), skill: g.skill
+    });
+  } catch (e) { /* ignore */ }
+}
+// がめんが かわったのに こたえて いない もんだいが あれば みかいとう
+function checkLeftQuestion() { if (openQuestion && openQuestion.v !== view) logUnanswered(); }
+let suspendedQuestion = null;
+window.addEventListener('pagehide', () => {
+  if (openQuestion) suspendedQuestion = openQuestion;
+  logUnanswered();
+});
+window.addEventListener('pageshow', e => {
+  if (e.persisted && suspendedQuestion && suspendedQuestion.v === view) {
+    openQuestion = suspendedQuestion;
+  }
+  suspendedQuestion = null;
+});
 function markReplay() { if (view.ev) view.ev.replayed = true; }
 function markMistake(v) { if (v.ev) v.ev.mistake = true; }
 // こたえた しゅんかんに がめんに こたえが みえていたか(字幕・ヒント・みほん)
@@ -1195,6 +1228,7 @@ function questionSupport(v, answerHighlighted = false) {
   });
 }
 function logEvidence(game, cat, itemId, v, answerHighlighted = false) {
+  if (openQuestion && openQuestion.v === v) openQuestion = null;
   try {
     const g = LearningCatalog.GAMES[game];
     learn.recordAttempt({
@@ -1243,7 +1277,7 @@ function startQuiz(catId) {
     answer, options: shuffle([answer, ...sample(c.words.filter(w => w !== answer), n - 1)])
   }));
   go('quiz', { cat: catId, round, i: 0, earned: 0, firstTry: true, locked: false });
-  newQuestion(view);
+  newQuestion(view, 'quiz', catId, view.round[0].answer.en);
   sayQuestion();
 }
 function sayABC(log = true) {
@@ -1295,7 +1329,7 @@ function spawnWave() {
   });
   v.speed = H / (state.level === 1 ? 10 : 6.5); // 1びょうに すすむ px
   v.firstTry = true; v.locked = false; v.hintLv = 0; v.hintText = '';
-  newQuestion(v);
+  newQuestion(v, 'balloon', WORD_CAT.get(target), target.en);
   const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(v);
   setCaption(linePop(target), state.capHide);
   Speech.say(popLine(target));
@@ -1314,8 +1348,10 @@ function balloonLoop(v) {
     });
     if (escaped && !v.locked) {
       v.locked = true; sfx.bad(); Speech.say('Oops! Try again!');
-      // とんでいった ときは「さいしょで できなかった」として あつかう
-      setTimeout(() => { if (view === v) { spawnWave(); v.firstTry = false; markMistake(v); } }, 1600);
+      // とんでいった ときは「みかいとう」(まちがいでは ない)。おなじ ことばを あたらしい もんだいとして もういちど。
+      // ほしの ルールは これまでどおり(この もんだいでは ほしは もらえない)
+      logUnanswered();
+      setTimeout(() => { if (view === v) { spawnWave(); v.firstTry = false; } }, 1600);
     }
     requestAnimationFrame(step);
   };
@@ -1331,7 +1367,7 @@ function startMole() {
 }
 function moleTarget() {
   Object.assign(view, { firstTry: true, locked: false, since: 0, hintLv: 0, hintText: '', glow: false });
-  newQuestion(view);
+  newQuestion(view, 'mole', 'letters', view.words[view.i].l);
   $$('.mole.glow').forEach(m => m.classList.remove('glow'));
   const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(view);
   setCaption(lineLetter(view.words[view.i]), state.capHide);
@@ -1379,7 +1415,7 @@ function startShop() {
 function setShelf() {
   const o = view.words[view.i];
   Object.assign(view, { shelf: shuffle([o.w, ...sample(SHOP_FOODS.filter(f => f !== o.w), state.level === 1 ? 2 : 3)]), basket: [], firstTry: true, done: false, hintLv: 0, hintText: '' });
-  newQuestion(view);
+  newQuestion(view, 'shopgame', 'food', `${o.n}-${o.w.en}`);
 }
 function sayOrder() { const o = view.words[view.i]; Speech.say(orderLine(o.n, o.w)); }
 
@@ -1477,7 +1513,7 @@ async function playMineThenModel(v) {
 function setupMeal() {
   const foods = CAT.food.words, want = rnd(foods), n = state.level === 1 ? 3 : 4;
   Object.assign(view, { want, options: shuffle([want, ...sample(foods.filter(w => w !== want), n - 1)]), firstTry: true, fed: false, happy: false, hintLv: 0, hintText: '' });
-  newQuestion(view);
+  newQuestion(view, 'pet', 'food', want.en);
 }
 function openPet() {
   view = { name: 'pet' };
@@ -1534,7 +1570,7 @@ const ACTS = {
       setTimeout(() => {
         if (view !== v) return;
         v.i++; v.firstTry = true; v.locked = false; v.hintLv = 0; v.hintText = '';
-        if (v.i >= v.round.length) finish('quiz'); else { newQuestion(v); render(); sayQuestion(); }
+        if (v.i >= v.round.length) finish('quiz'); else { newQuestion(v, 'quiz', v.cat, v.round[v.i].answer.en); render(); sayQuestion(); }
       }, 1700);
     } else {
       btn.classList.add('wrong'); btn.disabled = true; v.firstTry = false; markMistake(v); sfx.bad(); nudgeHint();

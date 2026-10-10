@@ -62,7 +62,7 @@
   }
   function emptyAggregate() {
     return {
-      attempts: 0, trials: 0, firstTrySuccesses: 0, validSuccesses: 0, independenceWeight: 0,
+      attempts: 0, unanswered: 0, trials: 0, firstTrySuccesses: 0, validSuccesses: 0, independenceWeight: 0,
       independentSuccesses: 0, supportHistogram: [0, 0, 0, 0],
       firstIndependentDate: null, latestIndependentDate: null,
       independentScenes: [], independentItems: [],
@@ -93,6 +93,8 @@
     if (!RECOGNITION.includes(a.recognition)) return 'unknown recognition';
     if (![0, 1, 2, 3].includes(a.support)) return 'support must be 0-3';
     for (const k of ['completed', 'verified', 'firstTry']) if (!isBool(a[k])) return `${k} must be boolean`;
+    if (a.unanswered !== undefined && !isBool(a.unanswered)) return 'unanswered must be boolean';
+    if (a.unanswered && (a.completed || a.verified)) return 'an unanswered attempt cannot be completed or verified';
     if (SCORING_METHODS.includes(a.method) && a.canDoIds.length === 0) return 'scoring evidence needs a Can-do';
     if (a.skill != null && !catalog.SKILLS.includes(a.skill)) return 'unknown skill';
     for (const k of ['semanticMatch', 'recognitionConfidence', 'responseLatencyMs']) if (a[k] !== undefined && !isNumOrNull(a[k])) return `${k} must be a number or null`;
@@ -119,7 +121,9 @@
   }
 
   // ---------- evidence folding (shared by scoring and compaction, so they can never disagree) ----------
-  const isEligible = a => SCORING_METHODS.includes(a.method) && a.recognition !== 'failed' && a.recognition !== 'uncertain';
+  // Unanswered (the child did not respond: a balloon floated away, the child left the screen) is recorded for
+  // participation only. It is neither a mistake nor a trial, so it never lowers task success or mastery.
+  const isEligible = a => SCORING_METHODS.includes(a.method) && a.recognition !== 'failed' && a.recognition !== 'uncertain' && !a.unanswered;
   const isSuccess = a => a.completed && a.verified;
   const isIndependent = a => isSuccess(a) && a.firstTry && a.support <= 1;
   const addCapped = (arr, v, cap) => { if (!arr.includes(v) && arr.length < cap) arr.push(v); };
@@ -134,6 +138,7 @@
   function fold(acc, a, cfg) {
     acc.attempts++;
     if (!acc.lastPracticedAt || time(a.timestamp) > time(acc.lastPracticedAt)) acc.lastPracticedAt = a.timestamp;
+    if (a.unanswered) { acc.unanswered = (acc.unanswered || 0) + 1; return acc; }
     if (!isEligible(a)) return acc;
     acc.supportHistogram[a.support]++;
     if (!a.counted) return acc;
@@ -443,7 +448,8 @@
           mastered: list.filter(c => progressOf(c.id).status === 'mastered').length,
           assessable: list.filter(c => catalog.ASSESSABLE.has(c.id)).length,
           // Practice that is recorded but never counts as mastery (exposure, self-report, record-and-compare).
-          participation: p.attempts.filter(a => a.skill === skill && !SCORING_METHODS.includes(a.method)).length
+          participation: p.attempts.filter(a => a.skill === skill && !SCORING_METHODS.includes(a.method)).length,
+          unanswered: list.reduce((n, c) => n + (liveFor(c.id).unanswered || 0), 0)
         };
       }
       const required = items.filter(c => c.required);

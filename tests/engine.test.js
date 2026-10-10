@@ -599,3 +599,36 @@ test('parent observations can be back-dated inside the detailed window but not i
   assert.equal(r.error, 'too_old');
   assert.equal(r.foldedThrough, now, 'the UI can tell the parent which dates are still accepted');
 });
+
+test('Stage B: unanswered preserves mastery/review and survives compaction/reload', () => {
+  const env = setup();
+  masterL1LI01(env);
+  const id = 'L1_LI_01';
+  const before = env.engine.getCanDoProgress(id);
+  const evidence = env.engine.getEvidence(id);
+  env.now.advance(DAY);
+  assert.equal(env.rec({ unanswered: true, completed: false, verified: false, firstTry: false }).ok, true);
+  const after = env.engine.getCanDoProgress(id);
+  for (const k of Object.keys(before).filter(k => k !== 'lastPracticedAt')) assert.deepEqual(after[k], before[k], k);
+  const expected = { ...evidence, attempts: evidence.attempts + 1, unanswered: 1, lastPracticedAt: env.now().toISOString() };
+  assert.deepEqual(env.engine.getEvidence(id), expected);
+  assert.equal(env.engine.getDashboardSummary().skills.listening.unanswered, 1);
+  env.engine.compact(1);
+  const reloaded = setup({ storage: env.storage, now: env.now }).engine;
+  assert.deepEqual(reloaded.getEvidence(id), expected);
+  assert.deepEqual(reloaded.getCanDoProgress(id), after);
+  assert.equal(env.storage.getItem(LEGACY_KEY), LEGACY);
+});
+
+test('Stage B: unanswered alone is unknown and does not suppress the next success', () => {
+  const { rec, engine } = setup();
+  assert.equal(rec({ unanswered: 'yes' }).ok, false);
+  assert.equal(rec({ unanswered: true }).ok, false);
+  rec({ unanswered: true, completed: false, verified: false, firstTry: false });
+  const cp = engine.getCanDoProgress('L1_LI_01');
+  assert.equal(cp.taskSuccess, null); assert.equal(cp.independence, null);
+  assert.equal(cp.masteryScore, null); assert.equal(cp.nextReviewAt, null);
+  assert.equal(engine.getEvidence('L1_LI_01').trials, 0);
+  assert.equal(rec().counted, true);
+  assert.equal(engine.getEvidence('L1_LI_01').trials, 1);
+});
