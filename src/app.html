@@ -1169,10 +1169,68 @@ const VIEWS = {
   }
 };
 
+/* ---------- 学習記録(段階B) ----------
+   英語を聞いて えらべたことが わかる ゲームだけ Can-do の しょうこ(action)に する。
+   それ以外は「ふれた・さんか」の きろく。きろくの しっぱいで ゲームを とめない。
+   ほし・コインなどの eigo-asobi-v1 には さわらない(learner-progress-v1 だけ)。 */
+const learnStore = (() => {
+  try { const ls = window.localStorage; ls.getItem(LearningEngine.KEY); return ls; } catch (e) {
+    const m = new Map(); // ほぞんが つかえない ときは この ページの あいだだけ おぼえる
+    return { getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { m.set(k, String(v)); }, removeItem: k => { m.delete(k); } };
+  }
+})();
+const learn = LearningEngine.createEngine({ storage: learnStore, catalog: LearningCatalog });
+const WORD_CAT = new Map(CATS.flatMap(c => c.words.map(w => [w, c.id])));
+// 1もんごとの ようす: もういちど きいたか / まちがえたか / いつ はじまったか
+function newQuestion(v) { v.ev = { replayed: false, mistake: false, start: Date.now() }; }
+function markReplay() { if (view.ev) view.ev.replayed = true; }
+function markMistake(v) { if (v.ev) v.ev.mistake = true; }
+// こたえた しゅんかんに がめんに こたえが みえていたか(字幕・ヒント・みほん)
+const captionShowsAnswer = () => state.caption !== 'off' && !state.capHide;
+function questionSupport(v, answerHighlighted = false) {
+  const lv = v.hintLv || 0;
+  return LearningEngine.supportLevel({
+    replayed: v.ev.replayed, mistakeBefore: v.ev.mistake,
+    japaneseHint: lv >= 1, answerVisible: captionShowsAnswer(), answerHighlighted: lv >= 2 || answerHighlighted
+  });
+}
+function logEvidence(game, cat, itemId, v, answerHighlighted = false) {
+  try {
+    const g = LearningCatalog.GAMES[game];
+    learn.recordAttempt({
+      id: LearningEngine.newAttemptId(), taskId: `${game}:${cat}`, canDoIds: g.canDoIds, timestamp: new Date().toISOString(),
+      sceneId: g.scene(cat), itemId, promptType: g.promptType(cat), completed: true, verified: true,
+      firstTry: !v.ev.mistake, method: 'action', recognition: 'not_needed', support: questionSupport(v, answerHighlighted),
+      responseLatencyMs: Date.now() - v.ev.start, skill: g.skill
+    });
+  } catch (e) { /* ignore */ }
+}
+function logPractice(game, cat, itemId, method = 'exposure', recognition = 'not_needed') {
+  try {
+    const g = LearningCatalog.GAMES[game];
+    learn.recordAttempt({
+      id: LearningEngine.newAttemptId(), taskId: `${game}:${cat}`, canDoIds: [], timestamp: new Date().toISOString(),
+      sceneId: g.scene(cat), itemId, promptType: g.promptType(cat), completed: true, verified: false, firstTry: true,
+      method, recognition, support: 0, skill: g.skill
+    });
+  } catch (e) { /* ignore */ }
+}
+// あそんだ じかん(2ふん いじょう そうさが ないと かぞえない)
+let lastTouch = 0, engaged = 0;
+function noteEngagement() {
+  const t = Date.now();
+  if (lastTouch && t - lastTouch < 120000) engaged += (t - lastTouch) / 1000;
+  lastTouch = t;
+}
+function flushEngagement() { if (engaged >= 1) { try { learn.recordSession(engaged); } catch (e) { /* ignore */ } engaged = 0; } }
+setInterval(flushEngagement, 60000);
+document.addEventListener('visibilitychange', () => { if (document.hidden) { flushEngagement(); lastTouch = 0; } });
+
 /* ---------- game logic ---------- */
-function sayCard() {
+function sayCard(log = true) {
   const c = CAT[view.cat], w = c.words[view.i];
   state.learned[c.id + ':' + w.en] = 1; save();
+  if (log) logPractice('cards', c.id, w.en);
   Speech.say(w.en);
 }
 function sayQuestion() {
@@ -1185,10 +1243,12 @@ function startQuiz(catId) {
     answer, options: shuffle([answer, ...sample(c.words.filter(w => w !== answer), n - 1)])
   }));
   go('quiz', { cat: catId, round, i: 0, earned: 0, firstTry: true, locked: false });
+  newQuestion(view);
   sayQuestion();
 }
-function sayABC() {
+function sayABC(log = true) {
   const L = ABC[view.sel];
+  if (log) logPractice('abc', 'letters', L.l);
   Speech.sayAll(['#' + L.l, abcLine(L)]);
 }
 function startSpell() {
@@ -1235,6 +1295,7 @@ function spawnWave() {
   });
   v.speed = H / (state.level === 1 ? 10 : 6.5); // 1びょうに すすむ px
   v.firstTry = true; v.locked = false; v.hintLv = 0; v.hintText = '';
+  newQuestion(v);
   const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(v);
   setCaption(linePop(target), state.capHide);
   Speech.say(popLine(target));
@@ -1253,7 +1314,8 @@ function balloonLoop(v) {
     });
     if (escaped && !v.locked) {
       v.locked = true; sfx.bad(); Speech.say('Oops! Try again!');
-      setTimeout(() => { if (view === v) { spawnWave(); v.firstTry = false; } }, 1600);
+      // とんでいった ときは「さいしょで できなかった」として あつかう
+      setTimeout(() => { if (view === v) { spawnWave(); v.firstTry = false; markMistake(v); } }, 1600);
     }
     requestAnimationFrame(step);
   };
@@ -1269,6 +1331,7 @@ function startMole() {
 }
 function moleTarget() {
   Object.assign(view, { firstTry: true, locked: false, since: 0, hintLv: 0, hintText: '', glow: false });
+  newQuestion(view);
   $$('.mole.glow').forEach(m => m.classList.remove('glow'));
   const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(view);
   setCaption(lineLetter(view.words[view.i]), state.capHide);
@@ -1316,6 +1379,7 @@ function startShop() {
 function setShelf() {
   const o = view.words[view.i];
   Object.assign(view, { shelf: shuffle([o.w, ...sample(SHOP_FOODS.filter(f => f !== o.w), state.level === 1 ? 2 : 3)]), basket: [], firstTry: true, done: false, hintLv: 0, hintText: '' });
+  newQuestion(view);
 }
 function sayOrder() { const o = view.words[view.i]; Speech.say(orderLine(o.n, o.w)); }
 
@@ -1331,8 +1395,11 @@ function startSpeak() {
   setupSay(); render(); window.scrollTo(0, 0);
   Speech.say(view.words[0].en);
 }
-function setupSay() { Object.assign(view, { phase: 'ready', tries: 0, heard: '', buf: null, note: '', hintLv: 0, hintText: '' }); }
+function setupSay() { Object.assign(view, { phase: 'ready', tries: 0, heard: '', buf: null, note: '', hintLv: 0, hintText: '', asrValid: false }); }
 function spSuccess(v) {
+  // おしゃべりの ことばは まだ Can-do に つながって いないので「さんか」の きろく(音声認識で きこえたかも のこす)
+  const w = v.words[v.i];
+  logPractice('speak', WORD_CAT.get(w) || 'words', w.en, 'self_report', v.mode !== 'auto' ? 'not_needed' : v.asrValid ? 'valid' : 'uncertain');
   v.phase = 'ok'; v.earned++; addStars(1); sfx.good(); render(); burst($('.say-card'));
   Speech.say(rnd(PRAISE));
 }
@@ -1365,7 +1432,7 @@ function listenSpeech(v) {
     got = true; if (stale()) return;
     const alts = [...e.results[0]].map(a => a.transcript);
     v.heard = alts[0] || '';
-    if (heardOk(alts, v.words[v.i].en)) spSuccess(v);
+    if (heardOk(alts, v.words[v.i].en)) { v.asrValid = true; spSuccess(v); }
     else { v.tries++; v.phase = 'check'; render(); Speech.say(v.words[v.i].en); }
   };
   sr.onerror = e => {
@@ -1410,6 +1477,7 @@ async function playMineThenModel(v) {
 function setupMeal() {
   const foods = CAT.food.words, want = rnd(foods), n = state.level === 1 ? 3 : 4;
   Object.assign(view, { want, options: shuffle([want, ...sample(foods.filter(w => w !== want), n - 1)]), firstTry: true, fed: false, happy: false, hintLv: 0, hintText: '' });
+  newQuestion(view);
 }
 function openPet() {
   view = { name: 'pet' };
@@ -1448,27 +1516,28 @@ const ACTS = {
     if (view.next === 'cards') { go('cards', { cat: arg, i: 0 }); sayCard(); }
     else startQuiz(arg);
   },
-  say: () => sayCard(),
+  say: () => sayCard(false),
   step(arg) {
     const len = CAT[view.cat].words.length;
     view.i = (view.i + Number(arg) + len) % len; render(); sayCard();
   },
   quizFromCards: () => startQuiz(view.cat),
-  qsay: () => sayQuestion(),
+  qsay: () => { markReplay(); sayQuestion(); },
   pick(arg, btn) {
     const v = view; if (v.locked) return;
     const q = v.round[v.i], w = q.options[Number(arg)];
     if (w === q.answer) {
+      logEvidence('quiz', v.cat, q.answer.en, v);
       v.locked = true; btn.classList.add('correct'); sfx.good(); burst(btn); setCaption(lineQ(CAT[v.cat], q.answer), false);
       if (v.firstTry) { v.earned++; addStars(1); }
       Speech.sayAll([w.en, rnd(PRAISE)]);
       setTimeout(() => {
         if (view !== v) return;
         v.i++; v.firstTry = true; v.locked = false; v.hintLv = 0; v.hintText = '';
-        if (v.i >= v.round.length) finish('quiz'); else { render(); sayQuestion(); }
+        if (v.i >= v.round.length) finish('quiz'); else { newQuestion(v); render(); sayQuestion(); }
       }, 1700);
     } else {
-      btn.classList.add('wrong'); btn.disabled = true; v.firstTry = false; sfx.bad(); nudgeHint();
+      btn.classList.add('wrong'); btn.disabled = true; v.firstTry = false; markMistake(v); sfx.bad(); nudgeHint();
       Speech.sayAll(['Try again!', CAT[v.cat].q(q.answer)]);
     }
   },
@@ -1527,12 +1596,13 @@ const ACTS = {
     if (v.name === 'spell') render();
     else { const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(v); }
   },
-  msay: () => Speech.say('#' + view.words[view.i].l),
+  msay: () => { markReplay(); Speech.say('#' + view.words[view.i].l); },
   whack(arg, btn) {
     const v = view, k = Number(arg), h = v.holes[k];
     if (!h || h.hit || v.locked) return;
     const target = v.words[v.i];
     if (h.L === target) {
+      logEvidence('mole', 'letters', target.l, v, state.level === 1);
       h.hit = true; v.locked = true; clearTimeout(h.timer);
       btn.querySelector('.m-face').textContent = '😵'; setCaption(lineLetter(target), false);
       sfx.pop(); burst(btn);
@@ -1548,7 +1618,7 @@ const ACTS = {
       }, 1200);
     } else {
       btn.classList.remove('miss'); void btn.offsetWidth; btn.classList.add('miss');
-      v.firstTry = false; sfx.bad(); nudgeHint(); Speech.say('#' + target.l);
+      v.firstTry = false; markMistake(v); sfx.bad(); nudgeHint(); Speech.say('#' + target.l);
     }
   },
   flip(arg) {
@@ -1562,6 +1632,7 @@ const ACTS = {
     v.open = [];
     if (a.k === b.k) {
       v.matched++;
+      logPractice('memory', 'mixed', a.w.en);
       setTimeout(() => {
         if (view !== v) return;
         els.forEach(el => el.classList.add('done')); sfx.good(); burst(els[1]);
@@ -1581,7 +1652,7 @@ const ACTS = {
       }, 1300);
     }
   },
-  osay: () => sayOrder(),
+  osay: () => { markReplay(); sayOrder(); },
   tobasket(arg) {
     const v = view; if (v.done || v.basket.length >= 6) return;
     const w = v.shelf[Number(arg)]; v.basket.push(w); render();
@@ -1593,12 +1664,13 @@ const ACTS = {
     const v = view, o = v.words[v.i];
     if (v.done || !v.basket.length) return;
     if (v.basket.length === o.n && v.basket.every(w => w === o.w)) {
+      logEvidence('shopgame', 'food', `${o.n}-${o.w.en}`, v);
       v.done = true; sfx.good();
       if (v.firstTry) { v.earned++; addStars(1); }
       render(); burst($('.who'));
       Speech.sayAll(['Here you are!', 'Thank you!']);
     } else {
-      v.firstTry = false; sfx.bad(); render(); nudgeHint();
+      v.firstTry = false; markMistake(v); sfx.bad(); render(); nudgeHint();
       Speech.sayAll(['Try again!', orderLine(o.n, o.w)]);
     }
   },
@@ -1607,12 +1679,13 @@ const ACTS = {
     if (v.i >= v.total) finish('shopgame');
     else { setShelf(); render(); sayOrder(); }
   },
-  bsay: () => Speech.say(popLine(view.words[view.i])),
+  bsay: () => { markReplay(); Speech.say(popLine(view.words[view.i])); },
   popB(arg, el) {
     const v = view, b = v.balloons[Number(arg)];
     if (v.locked || !b || !b.alive) return;
     const target = v.words[v.i];
     if (b.w === target) {
+      logEvidence('balloon', WORD_CAT.get(target), target.en, v);
       v.locked = true; b.alive = false;
       el.classList.add('popped'); el.innerHTML = '<span class="emoji">💥</span>'; setCaption(linePop(target), false);
       sfx.pop(); burst(el);
@@ -1627,7 +1700,7 @@ const ACTS = {
       }, 1400);
     } else {
       el.classList.remove('wobble'); void el.offsetWidth; el.classList.add('wobble');
-      v.firstTry = false; sfx.bad(); nudgeHint(); Speech.say(popLine(target));
+      v.firstTry = false; markMistake(v); sfx.bad(); nudgeHint(); Speech.say(popLine(target));
     }
   },
   pet: () => openPet(),
@@ -1644,7 +1717,7 @@ const ACTS = {
   },
   wear() { const it = ITEM[view.sel]; state.wear[it.slot] = it.id; save(); render(); sfx.good(); Speech.say('You look great!'); },
   unwear() { const it = ITEM[view.sel]; state.wear[it.slot] = null; save(); view.sel = null; render(); },
-  petSay: () => Speech.say(wantLine(view.want)),
+  petSay: () => { markReplay(); Speech.say(wantLine(view.want)); },
   petNext() { setupMeal(); render(); Speech.say(wantLine(view.want)); },
   petTap(arg, el) {
     el.classList.remove('happy', 'wobble'); void el.offsetWidth;
@@ -1655,6 +1728,7 @@ const ACTS = {
     const v = view, w = v.options[Number(arg)];
     if (v.fed) return;
     if (w === v.want) {
+      logEvidence('pet', 'food', w.en, v);
       if (state.pet.day !== today()) { state.pet.day = today(); state.pet.meals = 0; }
       state.pet.meals++; state.pet.hearts++; state.coins += 3; save();
       v.fed = true; v.happy = true; sfx.good();
@@ -1662,12 +1736,12 @@ const ACTS = {
       render(); burst($('.pet-body'));
       Speech.sayAll(mealsLeft() ? ['Yummy! Thank you!'] : ['Yummy! Thank you!', "I'm full! See you tomorrow!"]);
     } else {
-      btn.classList.add('wrong'); btn.disabled = true; v.firstTry = false; sfx.bad(); nudgeHint();
+      btn.classList.add('wrong'); btn.disabled = true; v.firstTry = false; markMistake(v); sfx.bad(); nudgeHint();
       Speech.sayAll(['No, thank you.', wantLine(v.want)]);
     }
   },
   abc(arg) { view.sel = Number(arg); render(); sayABC(); },
-  abcsay: () => sayABC(),
+  abcsay: () => sayABC(false),
   ssay: () => Speech.say(view.words[view.i].en),
   tile(arg) {
     const v = view; if (v.done || v.checking) return;
@@ -1677,6 +1751,7 @@ const ACTS = {
     if (v.filled.length < ans.length) { render(); Speech.say('#' + t.ch); return; }
     if (v.filled.map(k => v.tiles[k].ch).join('') === ans) {
       v.done = true; sfx.good();
+      logPractice('spell', 'words', ans);
       if (v.firstTry) { v.earned++; addStars(1); }
       render(); burst($('.slots'));
       Speech.sayAll([...[...ans].map(ch => '#' + ch), ans, rnd(PRAISE)]);
@@ -1719,6 +1794,7 @@ document.addEventListener('pointerdown', e => {
   const b = e.target.closest('.balloon, .mole'); if (!b) return;
   e.preventDefault(); sfx.ctx(); ACTS[b.dataset.act](b.dataset.arg, b);
 });
+document.addEventListener('pointerdown', noteEngagement, true);
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
   if ((b.dataset.act === 'popB' || b.dataset.act === 'whack') && e.detail > 0) return; // pointerdown で処理ずみ
