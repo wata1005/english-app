@@ -108,6 +108,9 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
 .mode .ico { font-size: 3.2rem; line-height: 1; margin-bottom: auto; }
 .mode .m-ja { font-family: var(--font-ja); font-weight: 500; font-size: 1.25rem; }
 .mode .m-en { font-size: .95rem; font-weight: 600; opacity: .7; letter-spacing: .04em; }
+.sec { margin: 4px 0 -8px; font-family: var(--font-ja); font-weight: 500; font-size: 1.1rem; color: var(--ink-soft); display: flex; gap: 10px; align-items: baseline; }
+.sec .en { font-size: .9rem; font-weight: 600; letter-spacing: .06em; }
+@media (max-width: 639px) { .modes-sub .mode:last-child { grid-column: span 2; min-height: 120px; } }
 .mode .new { position: absolute; top: 14px; right: 14px; background: var(--card); color: var(--tomato); font-size: .8rem; font-weight: 700; letter-spacing: .08em; padding: 2px 10px; border-radius: 99px; }
 .link { align-self: center; color: var(--ink-soft); font-family: var(--font-ja); font-size: .95rem; text-decoration: underline; text-underline-offset: 4px; padding: 12px; }
 
@@ -256,6 +259,47 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
 @keyframes bob { 50% { transform: translateY(-8px); } }
 @keyframes hop { 50% { transform: translateY(-30px) scale(1.06); } }
 
+/* mole game — a grass scene with fixed colors */
+.mgame, .memgame, .sgame { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.sign { display: grid; place-items: center; min-width: 64px; height: 64px; padding-inline: 12px; border-radius: 16px; background: var(--card); box-shadow: 0 5px 0 var(--lift); font-size: 2.4rem; font-weight: 700; color: var(--tomato); }
+.meadow { width: 100%; max-width: 520px; padding: 24px 18px 18px; border-radius: 28px; background: linear-gradient(#A8E07F, #6FBF57); box-shadow: inset 0 0 0 3px rgba(0,0,0,.08); }
+.holes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 12px; }
+.hole {
+  position: relative; aspect-ratio: 1; max-width: 100%; overflow: hidden;
+  border-bottom: 14px solid #8B5A2B; border-radius: 0 0 22px 22px;
+  background: radial-gradient(ellipse 46% 22% at 50% 100%, #3A2614 0 98%, transparent 100%);
+}
+.mole {
+  position: absolute; left: 50%; bottom: 0; width: 86%;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  transform: translate(-50%, 110%); transition: transform .16s ease-out; touch-action: none;
+}
+.mole.up { transform: translate(-50%, 4%); }
+.m-card { min-width: 1.7em; padding: 0 .35em; border-radius: 10px; background: #FFFFFF; color: #22304F; font-size: clamp(1.4rem, 6vw, 2rem); font-weight: 700; line-height: 1.3; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
+.m-face { font-size: clamp(2.4rem, 11vw, 3.4rem); line-height: 1; }
+.mole.miss .m-card { animation: shake .4s; }
+
+/* memory cards */
+.mcards { width: 100%; max-width: 520px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.mcard { aspect-ratio: 3 / 4; max-width: 100%; perspective: 600px; }
+.mc-in { position: relative; display: block; width: 100%; height: 100%; transition: transform .35s; transform-style: preserve-3d; }
+.mcard.up .mc-in { transform: rotateY(180deg); }
+.mc-back, .mc-front { position: absolute; inset: 0; border-radius: 16px; display: grid; place-items: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 5px 0 var(--lift); }
+.mc-back { background-color: var(--berry); background-image: radial-gradient(rgba(255,255,255,.3) 2px, transparent 2.5px); background-size: 14px 14px; color: var(--on-accent); font-size: 2rem; font-weight: 700; }
+.mc-front { background: var(--card); transform: rotateY(180deg); font-size: clamp(2rem, 9vw, 3rem); }
+.mc-word { font-size: clamp(.95rem, 4.2vw, 1.35rem); font-weight: 600; padding: 0 4px; text-align: center; overflow-wrap: anywhere; line-height: 1.15; }
+.mcard.done .mc-front { background: var(--good-soft); box-shadow: 0 5px 0 var(--leaf); }
+
+/* shop game */
+.counter { width: min(100%, 480px); display: flex; align-items: center; gap: 16px; padding: 18px 20px; }
+.who { font-size: 4.6rem; line-height: 1; }
+.who.happy { animation: hop .5s 2; }
+.say-order { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; text-align: left; font-family: var(--font-ja); }
+.order-hint { font-family: var(--font); font-size: 1.5rem; font-weight: 600; }
+.basket { width: min(100%, 480px); min-height: 84px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 12px 16px; }
+.basket .b-ico { font-size: 2.2rem; margin-right: 6px; }
+.b-item { font-size: 2.4rem; line-height: 1; padding: 2px; }
+
 /* dress-up figure: accessories are placed in % of the pet emoji box */
 .figure { position: relative; display: inline-block; line-height: 1; }
 .figure .f-body { display: block; }
@@ -362,7 +406,8 @@ const ABC = [
 const STICKERS = ['🦄','🐳','🦖','🌈','🍩','🚒','🐙','🌻','🦋','🍉','🐧','⚽','🎈','🐞','🍭','🦒','🚁','🐬','🌟','👑'];
 const PRAISE = ['Great!', 'Good job!', 'Excellent!', 'Wonderful!', "That's right!", 'Super!'];
 const EXTRA = ['Try again!', 'Perfect! Great job!', 'Good job!', "Hello! Let's play!", 'Oops! Try again!',
-  'Hello!', 'I love you!', 'Yummy! Thank you!', 'No, thank you.', "I'm full! See you tomorrow!", 'Thank you!', 'You look great!'];
+  'Hello!', 'I love you!', 'Yummy! Thank you!', 'No, thank you.', "I'm full! See you tomorrow!", 'Thank you!', 'You look great!',
+  'Here you are!', 'Find the pairs!'];
 const abcLine = L => `${L.u} is for ${L.w}.`;
 
 // ふうせんわり: 絵で見分けられる ことば
@@ -377,26 +422,33 @@ const wantLine = w => `I want ${w.art || 'a'} ${w.en}!`;
 // きせかえ: コインで かう。名前は英語で読み上げる
 const SLOTS = [{ id: 'head', ja: 'あたま' }, { id: 'face', ja: 'かお' }, { id: 'hand', ja: 'もちもの' }, { id: 'bg', ja: 'ばしょ' }];
 const ITEMS = [
-  { id: 'cap', slot: 'head', e: '🧢', en: 'cap', ja: 'ぼうし', price: 10 },
-  { id: 'ribbon', slot: 'head', e: '🎀', en: 'ribbon', ja: 'リボン', price: 15 },
-  { id: 'flower', slot: 'head', e: '🌸', en: 'flower', ja: 'おはな', price: 15 },
-  { id: 'hat', slot: 'head', e: '🎩', en: 'hat', ja: 'シルクハット', price: 30 },
-  { id: 'crown', slot: 'head', e: '👑', en: 'crown', ja: 'おうかん', price: 60 },
-  { id: 'glasses', slot: 'face', e: '👓', en: 'glasses', ja: 'めがね', price: 20 },
-  { id: 'goggles', slot: 'face', e: '🥽', en: 'goggles', ja: 'ゴーグル', price: 25 },
-  { id: 'sunglasses', slot: 'face', e: '🕶️', en: 'sunglasses', ja: 'サングラス', price: 35 },
-  { id: 'balloon', slot: 'hand', e: '🎈', en: 'balloon', ja: 'ふうせん', price: 10 },
-  { id: 'lollipop', slot: 'hand', e: '🍭', en: 'lollipop', ja: 'ペロペロキャンディ', price: 15 },
-  { id: 'umbrella', slot: 'hand', e: '☂️', en: 'umbrella', ja: 'かさ', price: 25 },
-  { id: 'wand', slot: 'hand', e: '🪄', en: 'magic wand', ja: 'まほうの つえ', price: 40 },
-  { id: 'trophy', slot: 'hand', e: '🏆', en: 'trophy', ja: 'トロフィー', price: 80 },
-  { id: 'park', slot: 'bg', e: '🌳', en: 'park', ja: 'こうえん', price: 20, d: ['🌳', '🌷'] },
-  { id: 'beach', slot: 'bg', e: '🏖️', en: 'beach', ja: 'うみ', price: 30, d: ['⛱️', '🐚'] },
-  { id: 'snow', slot: 'bg', e: '⛄', en: 'snow', ja: 'ゆき', price: 40, d: ['⛄', '❄️'] },
-  { id: 'space', slot: 'bg', e: '🪐', en: 'space', ja: 'うちゅう', price: 50, d: ['🪐', '✨'] },
-  { id: 'castle', slot: 'bg', e: '🏰', en: 'castle', ja: 'おしろ', price: 60, d: ['🏰', '🌈'] },
+  { id: 'cap', slot: 'head', e: '🧢', en: 'cap', ja: 'ぼうし', price: 5 },
+  { id: 'ribbon', slot: 'head', e: '🎀', en: 'ribbon', ja: 'リボン', price: 8 },
+  { id: 'flower', slot: 'head', e: '🌸', en: 'flower', ja: 'おはな', price: 8 },
+  { id: 'hat', slot: 'head', e: '🎩', en: 'hat', ja: 'シルクハット', price: 15 },
+  { id: 'crown', slot: 'head', e: '👑', en: 'crown', ja: 'おうかん', price: 30 },
+  { id: 'glasses', slot: 'face', e: '👓', en: 'glasses', ja: 'めがね', price: 10 },
+  { id: 'goggles', slot: 'face', e: '🥽', en: 'goggles', ja: 'ゴーグル', price: 12 },
+  { id: 'sunglasses', slot: 'face', e: '🕶️', en: 'sunglasses', ja: 'サングラス', price: 18 },
+  { id: 'balloon', slot: 'hand', e: '🎈', en: 'balloon', ja: 'ふうせん', price: 5 },
+  { id: 'lollipop', slot: 'hand', e: '🍭', en: 'lollipop', ja: 'ペロペロキャンディ', price: 8 },
+  { id: 'umbrella', slot: 'hand', e: '☂️', en: 'umbrella', ja: 'かさ', price: 12 },
+  { id: 'wand', slot: 'hand', e: '🪄', en: 'magic wand', ja: 'まほうの つえ', price: 20 },
+  { id: 'trophy', slot: 'hand', e: '🏆', en: 'trophy', ja: 'トロフィー', price: 40 },
+  { id: 'park', slot: 'bg', e: '🌳', en: 'park', ja: 'こうえん', price: 10, d: ['🌳', '🌷'] },
+  { id: 'beach', slot: 'bg', e: '🏖️', en: 'beach', ja: 'うみ', price: 15, d: ['⛱️', '🐚'] },
+  { id: 'snow', slot: 'bg', e: '⛄', en: 'snow', ja: 'ゆき', price: 20, d: ['⛄', '❄️'] },
+  { id: 'space', slot: 'bg', e: '🪐', en: 'space', ja: 'うちゅう', price: 25, d: ['🪐', '✨'] },
+  { id: 'castle', slot: 'bg', e: '🏰', en: 'castle', ja: 'おしろ', price: 30, d: ['🏰', '🌈'] },
 ];
 const ITEM = Object.fromEntries(ITEMS.map(it => [it.id, it]));
+// おみせやさん: かずと たべものを くみあわせた ちゅうもん
+const SHOP_FOODS = [['apple', 'apples'], ['banana', 'bananas'], ['strawberry', 'strawberries'], ['orange', 'oranges'], ['carrot', 'carrots'], ['egg', 'eggs']]
+  .map(([one, many]) => ({ ...CAT.food.words.find(w => w.en === one), many }));
+const NUMS = ['One', 'Two', 'Three', 'Four', 'Five'];
+const orderLine = (n, w) => `${NUMS[n - 1]} ${n === 1 ? w.en : w.many}, please!`;
+// もぐらたたき(しょうがくせい): まちがえやすい 文字を まぜる
+const CONFUSE = { b: 'dpq', d: 'bpq', p: 'bdq', q: 'bdp', m: 'nw', n: 'mhu', u: 'nv', v: 'uwy', w: 'vm', i: 'jl', j: 'ig', l: 'it', h: 'nk', c: 'eo', e: 'ca', o: 'ac', g: 'qj', t: 'fl', f: 't', y: 'v' };
 
 // 録音ずみ音声のキー。'#a' は文字の読み方(エー)
 const clipKey = t => t[0] === '#' ? 'L_' + t[1] : t.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -408,6 +460,7 @@ function phrases() {
   BALLOON_WORDS.forEach(w => out.add(popLine(w)));
   CAT.food.words.forEach(w => out.add(wantLine(w)));
   ITEMS.forEach(it => out.add(it.en));
+  SHOP_FOODS.forEach(w => NUMS.forEach((_, k) => out.add(orderLine(k + 1, w))));
   [...PRAISE, ...EXTRA].forEach(p => out.add(p));
   'abcdefghijklmnopqrstuvwxyz'.split('').forEach(ch => out.add('#' + ch));
   return [...out];
@@ -417,6 +470,7 @@ const CLIPS = {/*CLIPS*/};
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
 const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const sample = (a, n) => shuffle(a).slice(0, n);
 const rnd = a => a[Math.floor(Math.random() * a.length)];
@@ -580,7 +634,7 @@ const progress = (n, i) => `<div class="progress" aria-label="${i + 1} / ${n}">$
 /* ---------- views ---------- */
 const app = $('#app');
 let view = { name: 'home' };
-const TITLES = { closet: 'きせかえ', balloon: 'ふうせんわり', pet: 'ペット', pick: 'どれに する?', cards: 'ことば カード', quiz: 'きいて タッチ', abc: 'ABC', spell: 'もじ ならべ', result: 'できたね!', stickers: 'シール ちょう', parent: 'おうちの かたへ' };
+const TITLES = { mole: 'もぐらたたき', memory: 'しんけいすいじゃく', shopgame: 'おみせやさん', closet: 'きせかえ', balloon: 'ふうせんわり', pet: 'ペット', pick: 'どれに する?', cards: 'ことば カード', quiz: 'きいて タッチ', abc: 'ABC', spell: 'もじ ならべ', result: 'できたね!', stickers: 'シール ちょう', parent: 'おうちの かたへ' };
 
 function go(name, params = {}) { view = { name, ...params }; render(); window.scrollTo(0, 0); }
 
@@ -616,12 +670,19 @@ const VIEWS = {
           <span class="hp-b">${petStage() === 0 ? 'あたためてね' : mealsLeft() ? 'おなか すいた〜' : 'げんき いっぱい!'}<br><small>${pet.ja}</small></span>
         </button>
       </section>
-      <nav class="modes" aria-label="あそびを えらぶ">
-        ${tile('cards', 'ことば カード', 'Word Cards', '🃏', '--sun')}
+      <h2 class="sec">ゲーム <span class="en">Games</span></h2>
+      <nav class="modes" aria-label="ゲームを えらぶ">
         ${tile('quiz', 'きいて タッチ', 'Listen & Touch', '👂', '--ocean')}
-        ${tile('balloon', 'ふうせんわり', 'Balloon Pop', '🎈', '--tomato', true)}
+        ${tile('balloon', 'ふうせんわり', 'Balloon Pop', '🎈', '--tomato')}
+        ${tile('mole', 'もぐらたたき', 'Whack-a-Letter', '🐹', '--leaf', true)}
+        ${tile('memory', 'しんけいすいじゃく', 'Memory', '🎴', '--berry', true)}
+        ${tile('shopgame', 'おみせやさん', 'Shop', '🧺', '--sun', true)}
+        ${tile('spell', 'もじ ならべ', 'Spelling', '🧩', '--ocean')}
+      </nav>
+      <h2 class="sec">まなぶ・あつめる <span class="en">Learn</span></h2>
+      <nav class="modes modes-sub" aria-label="まなぶ">
+        ${tile('cards', 'ことば カード', 'Word Cards', '🃏', '--sun')}
         ${tile('abc', 'エー ビー シー', 'ABC', '🔤', '--leaf')}
-        ${tile('spell', 'もじ ならべ', 'Spelling', '🧩', '--sun')}
         ${tile('stickers', 'シール ちょう', 'Sticker Book', '🦄', '--berry')}
       </nav>
       <button class="link" data-act="go" data-arg="parent">おうちの かたへ ・ せってい</button>`;
@@ -721,6 +782,50 @@ const VIEWS = {
     </div>`;
   },
 
+  mole() {
+    const v = view, L = v.words[v.i];
+    return `<div class="mgame">
+      ${progress(v.total, v.i)}
+      <div class="bhud">
+        <button class="listen chunky" data-act="msay"><span class="l-ico" aria-hidden="true">🔊</span>きいて、たたこう!</button>
+        ${state.level === 1 ? `<span class="sign" aria-label="さがす もじ">${L.u}</span>` : ''}
+      </div>
+      <div class="meadow"><div class="holes">${Array.from({ length: 9 }, (_, k) =>
+        `<div class="hole"><button class="mole" data-act="whack" data-arg="${k}" tabindex="-1"><span class="m-card"></span><span class="m-face">🐹</span></button></div>`).join('')}</div></div>
+    </div>`;
+  },
+
+  memory() {
+    const v = view;
+    return `<div class="memgame">
+      <p class="ask">おなじ ことばを 2まい さがそう</p>
+      <div class="mcards">${v.cards.map((c, k) =>
+        `<button class="mcard" data-act="flip" data-arg="${k}" aria-label="カード ${k + 1}"><span class="mc-in"><span class="mc-back" aria-hidden="true">?</span><span class="mc-front">${
+          c.face === 'pic' ? `<span class="emoji">${c.w.e}</span>` : `<span class="mc-word">${c.w.en}</span>`}</span></span></button>`).join('')}</div>
+      <p class="count mcount">みつけた ${v.matched} / ${v.total}</p>
+    </div>`;
+  },
+
+  shopgame() {
+    const v = view, o = v.words[v.i];
+    return `<div class="sgame">
+      ${progress(v.total, v.i)}
+      <div class="counter chunky">
+        <span class="who ${v.done ? 'happy' : ''}" aria-hidden="true">${o.who}</span>
+        <button class="bubble say-order" data-act="osay"><span aria-hidden="true">🔊</span>${
+          v.done ? 'ありがとう!' : v.hint ? `<span class="order-hint">${o.w.e} × ${o.n}</span>` : 'なにが ほしいかな?'}</button>
+      </div>
+      <div class="basket chunky" aria-label="かご"><span class="b-ico" aria-hidden="true">🧺</span>${
+        v.basket.length ? v.basket.map((w, k) => `<button class="b-item" data-act="unbasket" data-arg="${k}" aria-label="${w.ja}を もどす" ${v.done ? 'disabled' : ''}>${w.e}</button>`).join('')
+                        : '<span class="hint">たなから えらんで いれてね</span>'}</div>
+      <div class="opts n${v.shelf.length}">${v.shelf.map((w, k) =>
+        `<button class="opt chunky" data-act="tobasket" data-arg="${k}" aria-label="${w.ja}" ${v.done ? 'disabled' : ''}>${pic(w)}</button>`).join('')}</div>
+      <div class="row">${v.done
+        ? `<button class="pill chunky" data-act="onext">つぎの おきゃくさん ▶</button>`
+        : `<button class="pill chunky" data-act="handover" ${v.basket.length ? '' : 'disabled'}>はい、どうぞ!</button>`}</div>
+    </div>`;
+  },
+
   pet() {
     const v = view, st = petStage(), P = PET_STAGES[st], next = PET_STAGES[st + 1], left = mealsLeft();
     let bubble, body;
@@ -748,7 +853,7 @@ const VIEWS = {
         <button class="pet-body ${v.happy ? 'happy' : ''}" data-act="petTap" aria-label="${P.ja}">${figure()}</button>
         <p class="pet-name"><span>${P.ja}</span><span class="hearts" aria-label="なかよし ${state.pet.hearts}">❤️ ${state.pet.hearts}</span></p>
       </div>
-      <button class="pill alt chunky" data-act="closet">👕 きせかえ ・ おみせ(🪙${state.coins})</button>
+      <button class="pill alt chunky" data-act="closet">👕 きせかえ(🪙${state.coins})</button>
       ${body}
       <ol class="growth" aria-label="そだちかた">${PET_STAGES.map((p, k) =>
         `<li class="${k <= st ? 'got' : ''} ${k === st ? 'now' : ''}"><span class="g-e">${k <= st ? p.e : '?'}</span><span class="g-at">⭐${p.at}</span></li>`).join('')}</ol>
@@ -912,6 +1017,59 @@ function balloonLoop(v) {
   requestAnimationFrame(step);
 }
 
+/* もぐらたたき */
+function startMole() {
+  const total = state.level === 1 ? 6 : 8;
+  view = { name: 'mole', total, i: 0, earned: 0, words: sample(ABC, total), holes: Array(9).fill(null) };
+  render(); window.scrollTo(0, 0);
+  moleTarget(); moleTick(view);
+}
+function moleTarget() { Object.assign(view, { firstTry: true, locked: false, since: 0 }); Speech.say('#' + view.words[view.i].l); }
+function moleTick(v) {
+  if (view !== v) return;
+  const easy = state.level === 1, target = v.words[v.i];
+  const free = [...Array(9).keys()].filter(k => !v.holes[k]);
+  if (free.length && !v.locked) {
+    const k = rnd(free), btn = $$('.mole')[k];
+    let L;
+    if (!v.holes.some(h => h && h.L === target) && (v.since >= 2 || Math.random() < .4)) { L = target; v.since = 0; }
+    else {
+      const conf = !easy && CONFUSE[target.l] && Math.random() < .5 ? [...CONFUSE[target.l]] : null;
+      L = conf ? ABC.find(x => x.l === rnd(conf)) : rnd(ABC.filter(x => x !== target));
+      v.since++;
+    }
+    btn.querySelector('.m-card').textContent = easy ? L.u : L.l;
+    btn.querySelector('.m-face').textContent = '🐹';
+    btn.classList.add('up');
+    const h = { L }; v.holes[k] = h;
+    h.timer = setTimeout(() => { if (view === v && v.holes[k] === h) { btn.classList.remove('up'); v.holes[k] = null; } }, easy ? 2800 : 1900);
+  }
+  setTimeout(() => moleTick(v), easy ? 1300 : 950);
+}
+
+/* しんけいすいじゃく */
+function startMemory() {
+  const pairs = state.level === 1 ? 4 : 6, words = sample(BALLOON_WORDS, pairs);
+  const cards = shuffle(words.flatMap((w, k) => [{ w, k, face: 'pic' }, { w, k, face: state.level === 1 ? 'pic' : 'word' }]));
+  view = { name: 'memory', words, total: pairs, cards, open: [], matched: 0, misses: 0, earned: 0, busy: false };
+  render(); window.scrollTo(0, 0);
+  Speech.say('Find the pairs!');
+}
+
+/* おみせやさん */
+function startShop() {
+  const max = state.level === 1 ? 3 : 5;
+  const words = Array.from({ length: 5 }, () => ({ w: rnd(SHOP_FOODS), n: 1 + Math.floor(Math.random() * max), who: rnd(['🐻', '🐰', '🐼', '🦊', '🐱', '🐶', '🐷', '🐸']) }));
+  view = { name: 'shopgame', total: words.length, i: 0, earned: 0, words };
+  setShelf(); render(); window.scrollTo(0, 0);
+  sayOrder();
+}
+function setShelf() {
+  const o = view.words[view.i];
+  Object.assign(view, { shelf: shuffle([o.w, ...sample(SHOP_FOODS.filter(f => f !== o.w), state.level === 1 ? 2 : 3)]), basket: [], firstTry: true, done: false, hint: false });
+}
+function sayOrder() { const o = view.words[view.i]; Speech.say(orderLine(o.n, o.w)); }
+
 /* ペット */
 function setupMeal() {
   const foods = CAT.food.words, want = rnd(foods), n = state.level === 1 ? 3 : 4;
@@ -929,7 +1087,7 @@ function finish(mode) {
   const v = view, total = mode === 'quiz' ? v.round.length : v.words.length;
   let earned = v.earned;
   if (earned === 0) { addStars(1); earned = 1; } // がんばった ほし
-  const coins = v.earned + 3 + (v.earned === total ? 5 : 0); // せいかいの かず + クリア 3 + ぜんぶ せいかい 5
+  const coins = v.earned * 2 + 5 + (v.earned === total ? 5 : 0); // せいかい 1つ 2まい + クリア 5 + ぜんぶ せいかい 5
   state.coins += coins; save();
   go('result', { earned, coins, perfect: v.earned === total, replay: { mode, cat: v.cat } });
   sfx.fanfare();
@@ -944,6 +1102,9 @@ const ACTS = {
     else if (arg === 'abc') { go('abc', { sel: 0 }); sayABC(); }
     else if (arg === 'spell') startSpell();
     else if (arg === 'balloon') startBalloon();
+    else if (arg === 'mole') startMole();
+    else if (arg === 'memory') startMemory();
+    else if (arg === 'shopgame') startShop();
     else go(arg);
   },
   cat(arg) {
@@ -974,7 +1135,89 @@ const ACTS = {
       Speech.sayAll(['Try again!', CAT[v.cat].q(q.answer)]);
     }
   },
-  again() { const r = view.replay; r.mode === 'quiz' ? startQuiz(r.cat) : r.mode === 'balloon' ? startBalloon() : startSpell(); },
+  again() {
+    const r = view.replay;
+    ({ quiz: () => startQuiz(r.cat), balloon: startBalloon, spell: startSpell, mole: startMole, memory: startMemory, shopgame: startShop })[r.mode]();
+  },
+  msay: () => Speech.say('#' + view.words[view.i].l),
+  whack(arg, btn) {
+    const v = view, k = Number(arg), h = v.holes[k];
+    if (!h || h.hit || v.locked) return;
+    const target = v.words[v.i];
+    if (h.L === target) {
+      h.hit = true; v.locked = true; clearTimeout(h.timer);
+      btn.querySelector('.m-face').textContent = '😵';
+      sfx.pop(); burst(btn);
+      if (v.firstTry) { v.earned++; addStars(1); }
+      Speech.sayAll(['#' + target.l, rnd(PRAISE)]);
+      setTimeout(() => {
+        if (view !== v) return;
+        btn.classList.remove('up'); v.holes[k] = null; v.i++;
+        if (v.i >= v.total) { finish('mole'); return; }
+        $('.progress').outerHTML = progress(v.total, v.i);
+        const sign = $('.sign'); if (sign) sign.textContent = v.words[v.i].u;
+        moleTarget();
+      }, 1200);
+    } else {
+      btn.classList.remove('miss'); void btn.offsetWidth; btn.classList.add('miss');
+      v.firstTry = false; sfx.bad(); Speech.say('#' + target.l);
+    }
+  },
+  flip(arg) {
+    const v = view, k = Number(arg), c = v.cards[k];
+    if (v.busy || c.up) return;
+    c.up = true; $$('.mcard')[k].classList.add('up'); v.open.push(k);
+    Speech.say(c.w.en);
+    if (v.open.length < 2) return;
+    const [a, b] = v.open.map(i => v.cards[i]), els = v.open.map(i => $$('.mcard')[i]);
+    v.open = [];
+    if (a.k === b.k) {
+      v.matched++;
+      setTimeout(() => {
+        if (view !== v) return;
+        els.forEach(el => el.classList.add('done')); sfx.good(); burst(els[1]);
+        $('.mcount').textContent = `みつけた ${v.matched} / ${v.total}`;
+        Speech.sayAll([a.w.en, rnd(PRAISE)]);
+        if (v.matched === v.total) setTimeout(() => {
+          if (view !== v) return;
+          v.earned = Math.max(1, v.total - Math.floor(v.misses / 2)); // 2かい まちがえるごとに ⭐ -1
+          addStars(v.earned); finish('memory');
+        }, 1800);
+      }, 450);
+    } else {
+      v.misses++; v.busy = true;
+      setTimeout(() => {
+        if (view !== v) return;
+        a.up = b.up = false; els.forEach(el => el.classList.remove('up')); v.busy = false;
+      }, 1300);
+    }
+  },
+  osay: () => sayOrder(),
+  tobasket(arg) {
+    const v = view; if (v.done || v.basket.length >= 6) return;
+    const w = v.shelf[Number(arg)]; v.basket.push(w); render();
+    const n = v.basket.filter(x => x === w).length; // おなじ ものの かずを かぞえる
+    Speech.say(CAT.numbers.words[n - 1].en);
+  },
+  unbasket(arg) { const v = view; if (v.done) return; v.basket.splice(Number(arg), 1); render(); },
+  handover() {
+    const v = view, o = v.words[v.i];
+    if (v.done || !v.basket.length) return;
+    if (v.basket.length === o.n && v.basket.every(w => w === o.w)) {
+      v.done = true; sfx.good();
+      if (v.firstTry) { v.earned++; addStars(1); }
+      render(); burst($('.who'));
+      Speech.sayAll(['Here you are!', 'Thank you!']);
+    } else {
+      v.firstTry = false; v.hint = true; sfx.bad(); render();
+      Speech.sayAll(['Try again!', orderLine(o.n, o.w)]);
+    }
+  },
+  onext() {
+    const v = view; v.i++;
+    if (v.i >= v.total) finish('shopgame');
+    else { setShelf(); render(); sayOrder(); }
+  },
   bsay: () => Speech.say(popLine(view.words[view.i])),
   popB(arg, el) {
     const v = view, b = v.balloons[Number(arg)];
@@ -1024,7 +1267,7 @@ const ACTS = {
     if (v.fed) return;
     if (w === v.want) {
       if (state.pet.day !== today()) { state.pet.day = today(); state.pet.meals = 0; }
-      state.pet.meals++; state.pet.hearts++; state.coins += 2; save();
+      state.pet.meals++; state.pet.hearts++; state.coins += 3; save();
       v.fed = true; v.happy = true; sfx.good();
       if (v.firstTry) addStars(1);
       render(); burst($('.pet-body'));
@@ -1079,13 +1322,14 @@ const ACTS = {
   resetYes() { Object.assign(state, { stars: 0, learned: {}, coins: 10, owned: {}, wear: { head: null, face: null, hand: null, bg: null }, pet: { day: '', meals: 0, hearts: 0 } }); save(); view.confirmReset = false; render(); toast('きろくを けしました'); }
 };
 
+// うごく まと(ふうせん・もぐら)は 指が ふれた しゅんかんに はんのう する
 document.addEventListener('pointerdown', e => {
-  const b = e.target.closest('.balloon'); if (!b) return;
-  e.preventDefault(); sfx.ctx(); ACTS.popB(b.dataset.arg, b);
+  const b = e.target.closest('.balloon, .mole'); if (!b) return;
+  e.preventDefault(); sfx.ctx(); ACTS[b.dataset.act](b.dataset.arg, b);
 });
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
-  if (b.dataset.act === 'popB' && e.detail > 0) return; // pointerdown で処理ずみ
+  if ((b.dataset.act === 'popB' || b.dataset.act === 'whack') && e.detail > 0) return; // pointerdown で処理ずみ
   sfx.ctx();
   const fn = ACTS[b.dataset.act]; if (fn) fn(b.dataset.arg, b);
 });
