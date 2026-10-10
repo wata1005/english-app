@@ -465,7 +465,9 @@
           .map(c => ({ canDoId: c.canDoId, masteredAt: c.masteredAt })),
         dueReviews: all.filter(c => c.nextReviewAt && c.nextReviewAt <= today).map(c => c.canDoId),
         needsReview: all.filter(c => c.needsReview).map(c => c.canDoId),
-        weeklyEngagedSeconds: p.sessionSummaries.filter(s => s.date >= weekAgo).reduce((n, s) => n + s.engagedSeconds, 0),
+        weeklyActiveDays: p.sessionSummaries.filter(s => s.date >= weekAgo && s.date <= today && (s.engagedSeconds > 0 || s.missionsCompleted > 0)).length,
+        weeklyMissionsCompleted: p.sessionSummaries.filter(s => s.date >= weekAgo && s.date <= today).reduce((n, s) => n + s.missionsCompleted, 0),
+        weeklyEngagedSeconds: p.sessionSummaries.filter(s => s.date >= weekAgo && s.date <= today).reduce((n, s) => n + s.engagedSeconds, 0),
         levelUpRecommended: levelUpRecommended(),
         hasRecords: p.attempts.length > 0 || Object.keys(p.aggregates).length > 0,
         storageWarning
@@ -489,7 +491,7 @@
         const reason = cp.nextReviewAt && cp.nextReviewAt <= today ? 'review' : cp.status === 'discovering' ? 'new' : 'practice';
         for (const [game, g] of Object.entries(catalog.GAMES)) {
           if (g.evidence === 'action' && g.canDoIds.includes(c.id) && !out.some(o => o.game === game)) {
-            out.push({ game, canDoId: c.id, reason });
+            out.push({ game, category: game === 'quiz' ? 'animals' : game === 'mole' ? 'letters' : 'food', canDoId: c.id, reason });
             break;
           }
         }

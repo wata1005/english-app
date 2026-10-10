@@ -7,6 +7,7 @@
 
 **[Draft: Claude Code]** Pure logic lives in separate source files that `tools/build.js` inlines into `index.html`:
 - `src/engine.js` — storage, `recordAttempt`, scoring, status, compaction, selection. No DOM access.
+- `src/parent.js` — 保護者画面、入場確認、履歴表示（段階C）。
 - `src/catalog.js` — Can-do catalog (flags, scene alternatives) and the mapping from existing games to Can-dos.
 - `tests/*.test.js` — unit tests with the Node built-in test runner (`node --test`, Node 22). Browser regression tests run against the built `index.html` in headless Chrome.
 
@@ -182,3 +183,6 @@ Each stage is reviewed and approved before merging to `main`.
 - 風船の対象が画面外に出たら未回答。再出題は新しい回答機会として評価し、時間切れだけで自力度を下げない。従来の再出題、効果音、星を付けない報酬ルールは維持する。
 - bfcache から戻った場合は同じ問題を再開し、その後の正解または離脱を新しい回答機会として記録する。単なるタブの非表示は離脱扱いにしない。
 - 段階Cのダッシュボード・English-only UIは今回実装しない。`eigo-asobi-v1` の形式と既存ゲームの報酬は維持する。
+
+## 段階CでのAPI拡張
+`getDashboardSummary()` は `weeklyActiveDays`（操作時間またはミッション完了の記録がある日数）と `weeklyMissionsCompleted` を返す。週次集計は今日を含む7日間で、未来の日付は除外。`recommendMissions()` は既存ゲームの `category` も返す。保護者画面のEnglish-onlyヒント1は日本語の意味を提示せず、再生として記録する。

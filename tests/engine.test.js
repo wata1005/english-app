@@ -632,3 +632,15 @@ test('Stage B: unanswered alone is unknown and does not suppress the next succes
   assert.equal(rec().counted, true);
   assert.equal(engine.getEvidence('L1_LI_01').trials, 1);
 });
+
+test('Stage C: weekly summary excludes future sessions and recommendations include a usable category', () => {
+  const env = setup();
+  env.engine.recordSession(60, 1);
+  env.now.advance(DAY); env.engine.recordSession(120, 2);
+  env.now.advance(-DAY);
+  const s = env.engine.getDashboardSummary();
+  assert.equal(s.weeklyActiveDays, 1);
+  assert.equal(s.weeklyEngagedSeconds, 60);
+  assert.equal(s.weeklyMissionsCompleted, 1);
+  for (const r of env.engine.recommendMissions()) assert.ok(['animals', 'letters', 'food'].includes(r.category));
+});

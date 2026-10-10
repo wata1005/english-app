@@ -214,6 +214,23 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
 .seg .danger { background: var(--tomato); color: var(--on-accent); box-shadow: none; }
 .note { font-size: .9rem; color: var(--ink-soft); margin: 0; }
 
+/* Parent dashboard: wrap labels at narrow mobile sizes. */
+.parent-tabs { gap: 8px; }
+.parent-tabs button { flex: 1 1 130px; padding: 12px 10px; }
+.skill-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 12px; }
+.skill-card { padding: 16px; border: 2px solid var(--line); border-radius: 18px; min-width: 0; }
+.skill-card p, .history-entry p { margin: 6px 0; }
+.parent-warning { padding: 16px; border: 2px solid var(--tomato); border-radius: 16px; font-family: var(--font-ja); }
+.metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.metrics dd { margin: 0; font-size: 1.2rem; }
+.metrics dt { font-size: .85rem; color: var(--ink-soft); }
+.status-pill { display: inline-block; padding: 4px 8px; background: var(--good-soft); border-radius: 10px; }
+.history-entry { padding: 12px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.parent-play { display: block; text-align: left; text-decoration: underline; min-height: 48px; }
+.gate-sum { font-size: 2rem; text-align: center; margin: 8px; }
+.gate-choices button { flex: 1 1 60px; min-height: 48px; }
+@media (max-width: 400px) { .panel { padding: 18px 14px; } .seg button { padding: 12px 14px; } }
+
 /* balloon game */
 .bgame { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .bhud { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 20px; }
@@ -793,10 +810,11 @@ const lineABC = L => {
   const lk = LETTER_KANA[L.u.charCodeAt(0) - 65];
   return { en: `${L.u} is for {w}.`, kana: `${lk} イズ フォー {w}`, ja: `${L.u}は {w}の ${L.u}`, w: { en: L.w, kana: KANA[L.w] || '', ja } };
 };
+const effective = () => LearningEngine.effectiveSettings(state, learn.isImmersion());
 function caption(line, hide) {
-  if (state.caption === 'off' || !line) return '';
+  if (effective().caption === 'off' || !line) return '';
   const fill = (tpl, k) => tpl.replace('{w}', hide ? '<span class="mask">?</span>' : `<b>${line.w[k]}</b>`);
-  return `<div class="caption" aria-live="polite"><p class="cap-en">${fill(line.en, 'en')}</p>${state.caption === 'full'
+  return `<div class="caption" aria-live="polite"><p class="cap-en">${fill(line.en, 'en')}</p>${effective().caption === 'full'
     ? `<p class="cap-kana">${fill(line.kana, 'kana')}</p><p class="cap-ja">${fill(line.ja, 'ja')}</p>` : ''}</div>`;
 }
 // こたえた あと(または つぎの もんだい)に 字幕を かきかえる
@@ -835,8 +853,9 @@ const VIEWS = {
     const left = 5 - state.stars % 5;
     const allDone = Math.floor(state.stars / 5) >= STICKERS.length;
     const pet = PET_STAGES[petStage()];
+    const recommended = new Set(learn.recommendMissions().map(r => r.game));
     const tile = (mode, ja, en, ico, c, isNew) =>
-      `<button class="mode chunky" style="--c:var(${c})" data-act="mode" data-arg="${mode}"><span class="ico" aria-hidden="true">${ico}</span>${isNew ? '<span class="new">NEW</span>' : ''}<span><span class="m-ja">${ja}</span><br><span class="m-en">${en}</span></span></button>`;
+      `<button class="mode chunky" style="--c:var(${c})" data-act="mode" data-arg="${mode}"><span class="ico" aria-hidden="true">${ico}</span>${recommended.has(mode) ? '<span class="new">おすすめ</span>' : isNew ? '<span class="new">NEW</span>' : ''}<span><span class="m-ja">${ja}</span><br><span class="m-en">${en}</span></span></button>`;
     return `
       <section class="hello chunky">
         <div class="hello-main">
@@ -886,8 +905,8 @@ const VIEWS = {
       <button class="bigcard chunky" data-act="say" aria-label="${w.en} を きく">
         <span class="pic">${pic(w, true)}</span>
         <span class="word">${hl(w.en, w.en[0])}</span>
-        ${state.caption === 'full' ? `<span class="kana-word">${KANA[w.en] || ''}</span>` : ''}
-        ${state.showJa ? `<span class="ja-word">${w.ja}</span>` : ''}
+        ${effective().caption === 'full' ? `<span class="kana-word">${KANA[w.en] || ''}</span>` : ''}
+        ${effective().showJa ? `<span class="ja-word">${w.ja}</span>` : ''}
       </button>
       <div class="card-ctrl">
         <button class="round chunky" data-act="step" data-arg="-1" aria-label="まえの カード">◀</button>
@@ -904,7 +923,7 @@ const VIEWS = {
     return `<div class="quiz">
       ${progress(view.round.length, view.i)}
       <button class="listen chunky" data-act="qsay"><span class="l-ico" aria-hidden="true">🔊</span>きいて、タッチ!</button>
-      ${caption(lineQ(CAT[view.cat], q.answer), state.capHide)}
+      ${caption(lineQ(CAT[view.cat], q.answer), effective().capHide)}
       <div class="opts n${q.options.length}">${q.options.map((w, k) =>
         `<button class="opt chunky" data-act="pick" data-arg="${k}" aria-label="${w.ja}">${pic(w)}</button>`).join('')}</div>
       ${hintRow(view)}
@@ -967,7 +986,7 @@ const VIEWS = {
         ${progress(view.total, view.i)}
         <button class="listen chunky" data-act="bsay"><span class="l-ico" aria-hidden="true">🔊</span>きいて、わろう!</button>
       </div>
-      ${caption(linePop(view.words[view.i]), state.capHide)}
+      ${caption(linePop(view.words[view.i]), effective().capHide)}
       ${hintRow(view)}
       <div class="field" aria-label="ふうせん"></div>
     </div>`;
@@ -981,7 +1000,7 @@ const VIEWS = {
         <button class="listen chunky" data-act="msay"><span class="l-ico" aria-hidden="true">🔊</span>きいて、たたこう!</button>
         ${state.level === 1 ? `<span class="sign" aria-label="さがす もじ">${L.u}</span>` : ''}
       </div>
-      ${caption(lineLetter(L), state.capHide)}
+      ${caption(lineLetter(L), effective().capHide)}
       ${hintRow(v)}
       <div class="meadow"><div class="holes">${Array.from({ length: 9 }, (_, k) =>
         `<div class="hole"><button class="mole" data-act="whack" data-arg="${k}" tabindex="-1"><span class="m-card"></span><span class="m-face">🐹</span></button></div>`).join('')}</div></div>
@@ -1010,7 +1029,7 @@ const VIEWS = {
         <button class="bubble say-order" data-act="osay"><span aria-hidden="true">🔊</span>${
           v.done ? 'ありがとう!' : 'なにが ほしいかな?'}</button>
       </div>
-      ${caption(lineOrder(o.n, o.w), state.capHide && !v.done)}
+      ${caption(lineOrder(o.n, o.w), effective().capHide && !v.done)}
       <div class="basket chunky" aria-label="かご"><span class="b-ico" aria-hidden="true">🧺</span>${
         v.basket.length ? v.basket.map((w, k) => `<button class="b-item" data-act="unbasket" data-arg="${k}" aria-label="${w.ja}を もどす" ${v.done ? 'disabled' : ''}>${w.e}</button>`).join('')
                         : '<span class="hint">たなから えらんで いれてね</span>'}</div>
@@ -1043,8 +1062,8 @@ const VIEWS = {
       <div class="say-card chunky">
         <span class="pic">${pic(w, true)}</span>
         <span class="word">${hl(w.en, w.en[0])}</span>
-        ${state.caption === 'full' ? `<span class="kana-word">${KANA[w.en] || ''}</span>` : ''}
-        ${state.showJa ? `<span class="ja-word">${w.ja}</span>` : ''}
+        ${effective().caption === 'full' ? `<span class="kana-word">${KANA[w.en] || ''}</span>` : ''}
+        ${effective().showJa ? `<span class="ja-word">${w.ja}</span>` : ''}
       </div>
       <div class="row">
         <button class="listen chunky" data-act="spModel"><span class="l-ico" aria-hidden="true">🔊</span>おてほん</button>
@@ -1085,7 +1104,7 @@ const VIEWS = {
         <p class="pet-name"><span>${P.ja}</span><span class="hearts" aria-label="なかよし ${state.pet.hearts}">❤️ ${state.pet.hearts}</span></p>
       </div>
       <button class="pill alt chunky" data-act="closet">👕 きせかえ(🪙${state.coins})</button>
-      ${st > 0 && v.want ? caption(lineWant(v.want), state.capHide && !v.fed) : ''}
+      ${st > 0 && v.want ? caption(lineWant(v.want), effective().capHide && !v.fed) : ''}
       ${body}
       <ol class="growth" aria-label="そだちかた">${PET_STAGES.map((p, k) =>
         `<li class="${k <= st ? 'got' : ''} ${k === st ? 'now' : ''}"><span class="g-e">${k <= st ? figure({}, k) : '?'}</span><span class="g-at">⭐${p.at}</span></li>`).join('')}</ol>
@@ -1130,7 +1149,8 @@ const VIEWS = {
         : `<span class="sticker locked" aria-label="まだ">?</span>`).join('')}</div>`;
   },
 
-  parent() {
+  parent() { return parentScreen(); },
+  parentSettings() {
     const seg = (act, cur, opts) => `<div class="seg">${opts.map(([val, label]) =>
       `<button data-act="${act}" data-arg="${val}" aria-pressed="${String(cur) === String(val)}">${label}</button>`).join('')}</div>`;
     return `<section class="panel chunky">
@@ -1174,8 +1194,10 @@ const VIEWS = {
    英語を聞いて えらべたことが わかる ゲームだけ Can-do の しょうこ(action)に する。
    それ以外は「ふれた・さんか」の きろく。きろくの しっぱいで ゲームを とめない。
    ほし・コインなどの eigo-asobi-v1 には さわらない(learner-progress-v1 だけ)。 */
+let learningStorageUnavailable = false;
 const learnStore = (() => {
   try { const ls = window.localStorage; ls.getItem(LearningEngine.KEY); return ls; } catch (e) {
+    learningStorageUnavailable = true;
     const m = new Map(); // ほぞんが つかえない ときは この ページの あいだだけ おぼえる
     return { getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { m.set(k, String(v)); }, removeItem: k => { m.delete(k); } };
   }
@@ -1219,12 +1241,12 @@ window.addEventListener('pageshow', e => {
 function markReplay() { if (view.ev) view.ev.replayed = true; }
 function markMistake(v) { if (v.ev) v.ev.mistake = true; }
 // こたえた しゅんかんに がめんに こたえが みえていたか(字幕・ヒント・みほん)
-const captionShowsAnswer = () => state.caption !== 'off' && !state.capHide;
+const captionShowsAnswer = () => effective().caption !== 'off' && !effective().capHide;
 function questionSupport(v, answerHighlighted = false) {
   const lv = v.hintLv || 0;
   return LearningEngine.supportLevel({
     replayed: v.ev.replayed, mistakeBefore: v.ev.mistake,
-    japaneseHint: lv >= 1, answerVisible: captionShowsAnswer(), answerHighlighted: lv >= 2 || answerHighlighted
+    japaneseHint: lv >= 1 && effective().japaneseHint, answerVisible: captionShowsAnswer(), answerHighlighted: lv >= 2 || answerHighlighted
   });
 }
 function logEvidence(game, cat, itemId, v, answerHighlighted = false) {
@@ -1252,12 +1274,14 @@ function logPractice(game, cat, itemId, method = 'exposure', recognition = 'not_
 // あそんだ じかん(2ふん いじょう そうさが ないと かぞえない)
 let lastTouch = 0, engaged = 0;
 function noteEngagement() {
+  if (view.name === 'parent') { lastTouch = 0; return; }
   const t = Date.now();
   if (lastTouch && t - lastTouch < 120000) engaged += (t - lastTouch) / 1000;
   lastTouch = t;
 }
 function flushEngagement() { if (engaged >= 1) { try { learn.recordSession(engaged); } catch (e) { /* ignore */ } engaged = 0; } }
 setInterval(flushEngagement, 60000);
+window.addEventListener('pagehide', flushEngagement);
 document.addEventListener('visibilitychange', () => { if (document.hidden) { flushEngagement(); lastTouch = 0; } });
 
 /* ---------- game logic ---------- */
@@ -1331,7 +1355,7 @@ function spawnWave() {
   v.firstTry = true; v.locked = false; v.hintLv = 0; v.hintText = '';
   newQuestion(v, 'balloon', WORD_CAT.get(target), target.en);
   const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(v);
-  setCaption(linePop(target), state.capHide);
+  setCaption(linePop(target), effective().capHide);
   Speech.say(popLine(target));
 }
 function balloonLoop(v) {
@@ -1370,7 +1394,7 @@ function moleTarget() {
   newQuestion(view, 'mole', 'letters', view.words[view.i].l);
   $$('.mole.glow').forEach(m => m.classList.remove('glow'));
   const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(view);
-  setCaption(lineLetter(view.words[view.i]), state.capHide);
+  setCaption(lineLetter(view.words[view.i]), effective().capHide);
   Speech.say('#' + view.words[view.i].l);
 }
 function moleTick(v) {
@@ -1535,6 +1559,7 @@ function finish(mode) {
 }
 
 const ACTS = {
+  ...parentActions,
   home: () => go('home'),
   go: arg => go(arg),
   mode(arg) {
@@ -1599,6 +1624,17 @@ const ACTS = {
   hint() {
     const v = view, lv = v.hintLv = (v.hintLv || 0) + 1;
     const glow = el => el && el.classList.add('glow');
+    if (!effective().japaneseHint && lv === 1 && v.name !== 'memory') {
+      markReplay(); v.hintText = 'Listen slowly.';
+      const line = v.name === 'quiz' ? CAT[v.cat].q(v.round[v.i].answer)
+        : v.name === 'balloon' ? popLine(v.words[v.i])
+        : v.name === 'mole' ? '#' + v.words[v.i].l
+        : v.name === 'shopgame' ? orderLine(v.words[v.i].n, v.words[v.i].w)
+        : v.name === 'pet' ? wantLine(v.want) : v.words[v.i].en;
+      Speech.say(line, true);
+      const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(v);
+      return;
+    }
     if (v.name === 'quiz') {
       const q = v.round[v.i];
       if (lv === 1) { v.hintText = `にほんごで「${q.answer.ja}」`; Speech.sayAll([CAT[v.cat].q(q.answer), q.answer.en], true); }
@@ -1629,6 +1665,7 @@ const ACTS = {
     } else if (v.name === 'speak') {
       v.hintText = 'ゆっくり きいて、まねしてみよう'; Speech.say(v.words[v.i].en, true);
     }
+    if (!effective().japaneseHint && lv >= 2 && v.name !== 'memory') v.hintText = v.name === 'shopgame' ? v.hintText : 'Follow the glow.';
     if (v.name === 'spell') render();
     else { const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(v); }
   },
@@ -1824,6 +1861,8 @@ const ACTS = {
   resetNo() { view.confirmReset = false; render(); },
   resetYes() { Object.assign(state, { stars: 0, learned: {}, coins: 10, owned: {}, wear: { head: null, face: null, hand: null, bg: null }, pet: { day: '', meals: 0, hearts: 0 } }); save(); view.confirmReset = false; render(); toast('きろくを けしました'); }
 };
+
+guardParentActions();
 
 // うごく まと(ふうせん・もぐら)は 指が ふれた しゅんかんに はんのう する
 document.addEventListener('pointerdown', e => {

@@ -216,6 +216,23 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
 .seg .danger { background: var(--tomato); color: var(--on-accent); box-shadow: none; }
 .note { font-size: .9rem; color: var(--ink-soft); margin: 0; }
 
+/* Parent dashboard: wrap labels at narrow mobile sizes. */
+.parent-tabs { gap: 8px; }
+.parent-tabs button { flex: 1 1 130px; padding: 12px 10px; }
+.skill-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 12px; }
+.skill-card { padding: 16px; border: 2px solid var(--line); border-radius: 18px; min-width: 0; }
+.skill-card p, .history-entry p { margin: 6px 0; }
+.parent-warning { padding: 16px; border: 2px solid var(--tomato); border-radius: 16px; font-family: var(--font-ja); }
+.metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.metrics dd { margin: 0; font-size: 1.2rem; }
+.metrics dt { font-size: .85rem; color: var(--ink-soft); }
+.status-pill { display: inline-block; padding: 4px 8px; background: var(--good-soft); border-radius: 10px; }
+.history-entry { padding: 12px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.parent-play { display: block; text-align: left; text-decoration: underline; min-height: 48px; }
+.gate-sum { font-size: 2rem; text-align: center; margin: 8px; }
+.gate-choices button { flex: 1 1 60px; min-height: 48px; }
+@media (max-width: 400px) { .panel { padding: 18px 14px; } .seg button { padding: 12px 14px; } }
+
 /* balloon game */
 .bgame { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .bhud { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 20px; }
@@ -945,7 +962,9 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
           .map(c => ({ canDoId: c.canDoId, masteredAt: c.masteredAt })),
         dueReviews: all.filter(c => c.nextReviewAt && c.nextReviewAt <= today).map(c => c.canDoId),
         needsReview: all.filter(c => c.needsReview).map(c => c.canDoId),
-        weeklyEngagedSeconds: p.sessionSummaries.filter(s => s.date >= weekAgo).reduce((n, s) => n + s.engagedSeconds, 0),
+        weeklyActiveDays: p.sessionSummaries.filter(s => s.date >= weekAgo && s.date <= today && (s.engagedSeconds > 0 || s.missionsCompleted > 0)).length,
+        weeklyMissionsCompleted: p.sessionSummaries.filter(s => s.date >= weekAgo && s.date <= today).reduce((n, s) => n + s.missionsCompleted, 0),
+        weeklyEngagedSeconds: p.sessionSummaries.filter(s => s.date >= weekAgo && s.date <= today).reduce((n, s) => n + s.engagedSeconds, 0),
         levelUpRecommended: levelUpRecommended(),
         hasRecords: p.attempts.length > 0 || Object.keys(p.aggregates).length > 0,
         storageWarning
@@ -969,7 +988,7 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
         const reason = cp.nextReviewAt && cp.nextReviewAt <= today ? 'review' : cp.status === 'discovering' ? 'new' : 'practice';
         for (const [game, g] of Object.entries(catalog.GAMES)) {
           if (g.evidence === 'action' && g.canDoIds.includes(c.id) && !out.some(o => o.game === game)) {
-            out.push({ game, canDoId: c.id, reason });
+            out.push({ game, category: game === 'quiz' ? 'animals' : game === 'mole' ? 'letters' : 'food', canDoId: c.id, reason });
             break;
           }
         }
@@ -1032,6 +1051,158 @@ main { display: flex; flex-direction: column; gap: 24px; flex: 1; }
     _internal: { dayKey, daysBetween, addDays, fold, metrics, emptyAggregate, sanitize, attemptError }
   });
 });
+</script>
+<script>
+// Stage C parent UI. Loaded before app.html; functions run after the app has initialized.
+// Gate state is transient and scoped to one visit. This prevents casual child access, not developer-tool access.
+const PARENT_TABS = { growth: '成長', abilities: 'できるようになったこと', history: '学習履歴', settings: '設定' };
+const SKILL_NAMES = { listening: '聞いてわかる', speaking: '話して伝える', reading: '読んでわかる', writing: '書いて伝える' };
+const STATUS_NAMES = { discovering: '未評価・記録を集めています', developing: '練習中', practicing: '場面を広げて練習中', mastered: '習得済み' };
+const GAME_NAMES = { quiz: 'きいてタッチ', balloon: 'ふうせんわり', mole: 'もぐらたたき', shopgame: 'おみせやさん',
+  pet: 'ペットのごはん', speak: 'おしゃべり', cards: 'ことばカード', abc: 'ABC', spell: 'もじならべ', memory: 'しんけいすいじゃく' };
+const escapeHtml = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const parentDate = ts => Number.isNaN(new Date(ts).getTime()) ? '日時不明' : new Date(ts).toLocaleDateString('ja-JP');
+const parentAllowed = () => view.name === 'parent' && view.parentUnlocked === true;
+const parentPanel = (title, content) => `<section class="panel chunky"><h2>${title}</h2>${content}</section>`;
+const parentButtons = (act, current, choices) => `<div class="seg">${choices.map(([v, text]) => `<button data-act="${act}" data-arg="${v}" aria-pressed="${String(v) === String(current)}">${text}</button>`).join('')}</div>`;
+
+function newParentGate() {
+  const a = 6 + Math.floor(Math.random() * 4), b = 3 + Math.floor(Math.random() * 5), answer = a + b;
+  view.gate = { a, b, answer, choices: shuffle([answer - 2, answer - 1, answer, answer + 1, answer + 2, answer + 3]) };
+}
+function parentScreen() {
+  if (!parentAllowed()) {
+    if (!view.gate) newParentGate();
+    const g = view.gate;
+    return parentPanel('おうちの方に交代してください', `<p>大人の方が計算の答えを選んでください。</p><p class="gate-sum">${g.a} + ${g.b} = ?</p>
+      <div class="seg gate-choices">${g.choices.map(n => `<button data-act="parentGate" data-arg="${n}">${n}</button>`).join('')}</div>
+      <p class="note" role="status">${view.gateError || 'この確認は子どもの誤操作を減らすためのもので、本人認証ではありません。'}</p>`);
+  }
+  const tab = view.parentTab || 'growth';
+  const content = tab === 'settings' ? parentSettingsScreen() : tab === 'abilities' ? parentAbilities() : tab === 'history' ? parentHistory() : parentGrowth();
+  const summary = learn.getDashboardSummary();
+  return `<nav class="seg parent-tabs" aria-label="保護者メニュー">${Object.entries(PARENT_TABS).map(([key, name]) => `<button data-act="parentTab" data-arg="${key}" aria-pressed="${tab === key}">${name}</button>`).join('')}</nav>
+    <p class="note">記録はこの端末・このブラウザだけに保存されます。別端末との同期はなく、現在はお子さま1人分です。</p>
+    ${summary.storageWarning || learningStorageUnavailable ? '<p class="parent-warning" role="alert">保存容量が足りないか保存機能を利用できないため、今日の記録の一部を保存できませんでした。</p>' : ''}${content}`;
+}
+function parentGrowth() {
+  const s = learn.getDashboardSummary();
+  const skills = Object.entries(s.skills).map(([key, v]) => `<article class="skill-card"><h3>${SKILL_NAMES[key]}</h3>
+    <p>${v.assessed ? `評価記録あり ${v.assessed} / ${v.total}項目` : '未評価'}</p><p>習得済み ${v.mastered} / ${v.total}項目</p>
+    <p class="note">${v.assessable ? `現在の遊びで確認できるのは ${v.assessable}項目です。` : 'これから追加される遊びで確認します。'}</p>
+    <p class="note">詳細履歴内の参加・練習 ${v.participation}回${key === 'speaking' ? '（発話の習得を証明する記録ではありません）' : ''}／このレベルの未回答 ${v.unanswered}回</p></article>`).join('');
+  const recent = s.recentCanDos.length ? `<ul>${s.recentCanDos.map(c => `<li>${escapeHtml(LearningCatalog.BY_ID[c.canDoId].ja)} <small>${parentDate(c.masteredAt)}・${parentEvidenceSource(c.canDoId)}</small></li>`).join('')}</ul>` : '<p class="note">習得を確認できた項目はまだありません。</p>';
+  const needs = s.needsReview.filter(id => { const c = LearningCatalog.BY_ID[id]; return c.critical && learn.getCanDoProgress(id).status === 'mastered'; });
+  return parentPanel(`レベル${s.level}：${escapeHtml(s.levelName)}`, `<p class="note">アプリ内学習レベル（CEFR認定ではありません）</p>
+    ${s.hasRecords ? `<p>必須項目の習得 ${s.requiredMastered} / ${s.requiredTotal}項目</p>` : '<p>まだ学習記録がありません</p>'}
+    <p class="note">記録のない項目は未評価です。現在の遊びだけでは、レベルの必須項目すべてを確認できません。</p>
+    <p>確認待ち ${s.confirmPending}項目</p>${s.levelUpRecommended ? '<p>次のレベルをおすすめします。必須項目すべての習得が確認できました。</p><div class="seg"><button data-act="approveCurriculum">承認する</button></div>' : ''}`)
+    + parentPanel('4つの力', `<div class="skill-grid">${skills}</div><p class="note">技能間の数値は共通のテストによる比較ではありません。</p>`)
+    + parentPanel('最近できるようになったこと', recent)
+    + parentPanel('次のおすすめ', parentRecommendations())
+    + (needs.length ? parentPanel('復習おすすめ', `<ul>${needs.map(id => `<li>${escapeHtml(LearningCatalog.BY_ID[id].ja)}</li>`).join('')}</ul>`) : '')
+    + parentPanel('この7日間', `<p>操作時間を記録できた日 ${s.weeklyActiveDays}日／操作の間から見積もった時間 約${Math.round(s.weeklyEngagedSeconds / 60)}分</p>
+      <p class="note">2分以上操作がない間は数えません。正確な利用時間ではありません。ミッションは今後追加予定です。長く遊ぶことを目標にせず、無理なく楽しんでください。</p>`);
+}
+function parentEvidenceSource(id) {
+  const attempts = learn.snapshot().attempts.filter(a => a.canDoIds.includes(id) && !a.unanswered && a.verified);
+  if (attempts.some(a => a.method === 'parent_observed')) return '保護者が確認した記録を含みます';
+  return '遊びの操作記録';
+}
+function parentRecommendations() {
+  const recs = learn.recommendMissions();
+  return recs.length ? `<ul>${recs.map((r, i) => `<li>${escapeHtml(LearningCatalog.BY_ID[r.canDoId].ja)}<br>
+    <button class="parent-play" data-act="parentPlay" data-arg="${i}">${GAME_NAMES[r.game]}${CAT[r.category] ? '・' + CAT[r.category].ja : ''}であそぶ</button>
+    <small>${r.reason === 'review' ? '復習の時期です' : '無理なく試してみましょう'}</small></li>`).join('')}</ul><p class="note">ホームにもおすすめを表示します。どの遊びも自由に選べます。</p>` : '<p>今のレベルのおすすめはありません。好きな遊びを楽しんでください。</p>';
+}
+function parentAbilities() {
+  const level = view.abilityLevel || learn.getLevel();
+  return parentPanel('できるようになったこと', parentButtons('abilityLevel', level, [1, 2, 3, 4].map(n => [n, `レベル${n}`]))
+    + '<p class="note">ヒントありの正解や参加だけでは、習得済みにはなりません。読み書きは発達に合わせて取り組む任意の項目を含みます。</p>')
+    + LearningCatalog.CAN_DOS.filter(c => c.level === level).map(c => {
+      const cp = learn.getCanDoProgress(c.id), ev = learn.getEvidence(c.id);
+      const status = cp.status === 'mastered' ? '習得済み' : cp.confirmPending ? '確認待ち' : ev.trials === 0 ? '未評価' : STATUS_NAMES[cp.status];
+      const metric = n => n == null ? '未評価' : `${escapeHtml(n)}%`;
+      return parentPanel(escapeHtml(c.ja), `<p>${SKILL_NAMES[c.skill]}・${c.required ? '必須項目' : '任意項目'} <strong class="status-pill">${status}</strong></p>
+        ${!LearningCatalog.ASSESSABLE.has(c.id) ? '<p class="note">これから追加される遊びで確認します。</p>' : ''}
+        <p class="note">評価対象 ${escapeHtml(ev.trials)}回／未回答 ${escapeHtml(ev.unanswered || 0)}回（評価から除外）</p>
+        <dl class="metrics"><div><dt>正答率</dt><dd>${metric(cp.taskSuccess)}</dd></div><div><dt>自力度</dt><dd>${metric(cp.independence)}</dd></div><div><dt>場面の広がり</dt><dd>${metric(cp.transfer)}</dd></div><div><dt>覚えていたこと</dt><dd>${metric(cp.retention)}</dd></div></dl>
+        <p class="note">記録が足りない指標は未評価です。${cp.masteredAt ? '習得確認 ' + parentDate(cp.masteredAt) + '・' + parentEvidenceSource(c.id) : ''}${cp.nextReviewAt ? '／復習予定 ' + escapeHtml(cp.nextReviewAt) : ''}</p>`);
+    }).join('');
+}
+function parentAttemptResult(a) {
+  if (a.unanswered) return '未回答（評価対象外）';
+  if (a.recognition === 'failed' || a.recognition === 'uncertain') return '発話を確認できませんでした（評価対象外）';
+  if (['exposure', 'self_report'].includes(a.method) || !a.canDoIds.length) return '参加・練習（習得の判定には使いません）';
+  return `${a.completed && a.verified ? a.firstTry ? '最初の選択で正解' : 'やり直して正解' : '未達成'}${a.counted ? '' : '（同じ問題の繰り返し・評価対象外）'}`;
+}
+function parentHistory() {
+  const snapshot = learn.snapshot();
+  const entries = [
+    ...snapshot.attempts.map(a => ({ timestamp: a.timestamp, a })),
+    ...snapshot.levelHistory.map(change => ({ timestamp: change.at, change }))
+  ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  const limit = view.historyLimit || 30;
+  let prev = '', html = '';
+  for (const entry of entries.slice(0, limit)) {
+    const day = parentDate(entry.timestamp);
+    if (day !== prev) { html += `<h3>${day}</h3>`; prev = day; }
+    if (entry.change) {
+      const c = entry.change;
+      html += `<article class="history-entry"><p>学習レベル ${escapeHtml(c.from)} → ${escapeHtml(c.to)}</p><p class="note">${c.reason === 'parent_manual' ? '保護者が手動で変更' : 'おすすめを保護者が承認'}</p></article>`;
+      continue;
+    }
+    const a = entry.a;
+    const game = a.taskId.split(':')[0];
+    const support = ['ヒントなし', 'もう一度聞いた・やり直した', 'ヒントあり・字幕の答えを見た', '答えを見た'][a.support];
+    html += `<article class="history-entry"><p><b>${GAME_NAMES[game] || escapeHtml(game)}</b>・${escapeHtml(a.itemId)}</p>
+      <p>${parentAttemptResult(a)}</p><p class="note">${a.canDoIds.map(id => escapeHtml(LearningCatalog.BY_ID[id].ja)).join('／') || '参加・練習'}<br>
+      ${a.unanswered ? '支援の評価なし' : support}・${a.method === 'parent_observed' ? '保護者が確認' : a.method === 'self_report' ? '本人の申告' : a.method === 'exposure' ? '英語に触れた記録' : a.method === 'asr' ? '音声認識' : '操作記録'}</p></article>`;
+  }
+  const months = snapshot.monthlySummaries;
+  return parentPanel('学習履歴', `<p class="note">詳細は最大90日・3,000件。容量不足では期間内でも月別に集計します。未回答は成績に含みません。</p>
+    ${html || '<p>まだ学習記録がありません</p>'}${entries.length > limit ? '<div class="seg"><button data-act="historyMore">さらに30件を見る</button></div>' : ''}`)
+    + parentPanel('月別の集計', months.length ? `<ul>${[...months].reverse().map(m => `<li>${escapeHtml(m.month)}：詳細から集計済み ${escapeHtml(m.attempts)}件（参加・未回答を含む）／操作時間 約${Math.round((m.engagedSeconds || 0) / 60)}分</li>`).join('')}</ul><p class="note">件数は圧縮した履歴の合計です。上の詳細履歴の件数は含みません。時間はその月全体の概算です。</p>` : '<p class="note">月別に集計した記録はまだありません。</p>');
+}
+function parentSettingsScreen() {
+  return parentPanel('学習の設定', `<h3>English-only（英語中心の表示）</h3>${parentButtons('immersion', learn.isImmersion() ? 1 : 0, [[0, 'OFF'], [1, 'ON']])}
+    <p class="note">ONでは字幕を英語だけにし、カードの日本語を隠します。日本語の意味ヒントはゆっくりの音声に替わります。下の字幕・日本語設定は保存されたまま、OFFで元に戻ります。操作案内と保護者画面は日本語です。</p>
+    <h3>アプリ内学習レベル</h3>${parentButtons('curriculumAsk', learn.getLevel(), [1, 2, 3, 4].map(n => [n, `レベル${n}`]))}
+    <p class="note">ゲームの難しさ・年齢設定とは別です。手動変更は習得を意味しません。</p>
+    ${view.pendingLevel ? `<p role="status">学習レベルを${view.pendingLevel}に変更しますか？ 変更を履歴に残します。</p><div class="seg"><button data-act="curriculumYes">変更する</button><button data-act="curriculumNo">やめる</button></div>` : ''}
+    <h3>学習記録だけを消去</h3><p class="note">評価・参加・未回答の履歴、学習レベル、復習予定、English-only設定を消します。ほし・コイン・ペット・きせかえ・字幕設定は残ります。</p>
+    <div class="seg">${view.confirmLearningReset ? '<button class="danger" data-act="learningResetYes">学習記録をすべて消す</button><button data-act="learningResetNo">やめる</button>' : '<button data-act="learningResetAsk">学習記録を消す…</button>'}</div>`)
+    + VIEWS.parentSettings();
+}
+const parentActions = {
+  parentGate(arg) {
+    if (view.name !== 'parent' || !view.gate) return;
+    if (Number(arg) === view.gate.answer) { view.parentUnlocked = true; view.parentTab = 'growth'; flushEngagement(); }
+    else { newParentGate(); view.gateError = '答えが違います。新しい計算を試してください。'; }
+    render();
+  },
+  parentTab(arg) { if (!(arg in PARENT_TABS)) return; view.parentTab = arg; view.confirmReset = false; view.confirmLearningReset = false; view.pendingLevel = null; render(); },
+  abilityLevel(arg) { if (![1, 2, 3, 4].includes(Number(arg))) return; view.abilityLevel = Number(arg); render(); },
+  historyMore() { view.historyLimit = (view.historyLimit || 30) + 30; render(); },
+  immersion(arg) { if (!['0', '1'].includes(arg)) return; learn.setImmersion(arg === '1'); render(); },
+  curriculumAsk(arg) { const level = Number(arg); if (![1, 2, 3, 4].includes(level) || level === learn.getLevel()) return; view.pendingLevel = level; render(); },
+  curriculumNo() { view.pendingLevel = null; render(); },
+  curriculumYes() { if (!view.pendingLevel) return; learn.setLevel(view.pendingLevel, 'parent_manual'); view.pendingLevel = null; render(); },
+  approveCurriculum() { learn.approveLevelUp(); render(); },
+  learningResetAsk() { view.confirmLearningReset = true; render(); },
+  learningResetNo() { view.confirmLearningReset = false; render(); },
+  learningResetYes() { if (!view.confirmLearningReset) return; learn.resetLearningProgress({ confirm: true }); view.confirmLearningReset = false; render(); toast('学習記録を消しました'); },
+  parentPlay(arg) { const r = learn.recommendMissions()[Number(arg)]; if (!r) return; if (r.game === 'quiz') startQuiz(r.category); else ACTS.mode(r.game); }
+};
+function guardParentActions() {
+  const actions = [...Object.keys(parentActions).filter(k => k !== 'parentGate'), 'level', 'rate', 'mic', 'caption', 'capHide', 'ja', 'resetAsk', 'resetNo', 'resetYes'];
+  for (const key of actions) {
+    const fn = ACTS[key];
+    ACTS[key] = (...args) => { if (parentAllowed()) return fn(...args); };
+  }
+  const reset = ACTS.resetYes;
+  ACTS.resetYes = (...args) => { if (view.confirmReset) return reset(...args); };
+}
 </script>
 <script>
 /* ---------- data ---------- */
@@ -1720,10 +1891,11 @@ const lineABC = L => {
   const lk = LETTER_KANA[L.u.charCodeAt(0) - 65];
   return { en: `${L.u} is for {w}.`, kana: `${lk} イズ フォー {w}`, ja: `${L.u}は {w}の ${L.u}`, w: { en: L.w, kana: KANA[L.w] || '', ja } };
 };
+const effective = () => LearningEngine.effectiveSettings(state, learn.isImmersion());
 function caption(line, hide) {
-  if (state.caption === 'off' || !line) return '';
+  if (effective().caption === 'off' || !line) return '';
   const fill = (tpl, k) => tpl.replace('{w}', hide ? '<span class="mask">?</span>' : `<b>${line.w[k]}</b>`);
-  return `<div class="caption" aria-live="polite"><p class="cap-en">${fill(line.en, 'en')}</p>${state.caption === 'full'
+  return `<div class="caption" aria-live="polite"><p class="cap-en">${fill(line.en, 'en')}</p>${effective().caption === 'full'
     ? `<p class="cap-kana">${fill(line.kana, 'kana')}</p><p class="cap-ja">${fill(line.ja, 'ja')}</p>` : ''}</div>`;
 }
 // こたえた あと(または つぎの もんだい)に 字幕を かきかえる
@@ -1762,8 +1934,9 @@ const VIEWS = {
     const left = 5 - state.stars % 5;
     const allDone = Math.floor(state.stars / 5) >= STICKERS.length;
     const pet = PET_STAGES[petStage()];
+    const recommended = new Set(learn.recommendMissions().map(r => r.game));
     const tile = (mode, ja, en, ico, c, isNew) =>
-      `<button class="mode chunky" style="--c:var(${c})" data-act="mode" data-arg="${mode}"><span class="ico" aria-hidden="true">${ico}</span>${isNew ? '<span class="new">NEW</span>' : ''}<span><span class="m-ja">${ja}</span><br><span class="m-en">${en}</span></span></button>`;
+      `<button class="mode chunky" style="--c:var(${c})" data-act="mode" data-arg="${mode}"><span class="ico" aria-hidden="true">${ico}</span>${recommended.has(mode) ? '<span class="new">おすすめ</span>' : isNew ? '<span class="new">NEW</span>' : ''}<span><span class="m-ja">${ja}</span><br><span class="m-en">${en}</span></span></button>`;
     return `
       <section class="hello chunky">
         <div class="hello-main">
@@ -1813,8 +1986,8 @@ const VIEWS = {
       <button class="bigcard chunky" data-act="say" aria-label="${w.en} を きく">
         <span class="pic">${pic(w, true)}</span>
         <span class="word">${hl(w.en, w.en[0])}</span>
-        ${state.caption === 'full' ? `<span class="kana-word">${KANA[w.en] || ''}</span>` : ''}
-        ${state.showJa ? `<span class="ja-word">${w.ja}</span>` : ''}
+        ${effective().caption === 'full' ? `<span class="kana-word">${KANA[w.en] || ''}</span>` : ''}
+        ${effective().showJa ? `<span class="ja-word">${w.ja}</span>` : ''}
       </button>
       <div class="card-ctrl">
         <button class="round chunky" data-act="step" data-arg="-1" aria-label="まえの カード">◀</button>
@@ -1831,7 +2004,7 @@ const VIEWS = {
     return `<div class="quiz">
       ${progress(view.round.length, view.i)}
       <button class="listen chunky" data-act="qsay"><span class="l-ico" aria-hidden="true">🔊</span>きいて、タッチ!</button>
-      ${caption(lineQ(CAT[view.cat], q.answer), state.capHide)}
+      ${caption(lineQ(CAT[view.cat], q.answer), effective().capHide)}
       <div class="opts n${q.options.length}">${q.options.map((w, k) =>
         `<button class="opt chunky" data-act="pick" data-arg="${k}" aria-label="${w.ja}">${pic(w)}</button>`).join('')}</div>
       ${hintRow(view)}
@@ -1894,7 +2067,7 @@ const VIEWS = {
         ${progress(view.total, view.i)}
         <button class="listen chunky" data-act="bsay"><span class="l-ico" aria-hidden="true">🔊</span>きいて、わろう!</button>
       </div>
-      ${caption(linePop(view.words[view.i]), state.capHide)}
+      ${caption(linePop(view.words[view.i]), effective().capHide)}
       ${hintRow(view)}
       <div class="field" aria-label="ふうせん"></div>
     </div>`;
@@ -1908,7 +2081,7 @@ const VIEWS = {
         <button class="listen chunky" data-act="msay"><span class="l-ico" aria-hidden="true">🔊</span>きいて、たたこう!</button>
         ${state.level === 1 ? `<span class="sign" aria-label="さがす もじ">${L.u}</span>` : ''}
       </div>
-      ${caption(lineLetter(L), state.capHide)}
+      ${caption(lineLetter(L), effective().capHide)}
       ${hintRow(v)}
       <div class="meadow"><div class="holes">${Array.from({ length: 9 }, (_, k) =>
         `<div class="hole"><button class="mole" data-act="whack" data-arg="${k}" tabindex="-1"><span class="m-card"></span><span class="m-face">🐹</span></button></div>`).join('')}</div></div>
@@ -1937,7 +2110,7 @@ const VIEWS = {
         <button class="bubble say-order" data-act="osay"><span aria-hidden="true">🔊</span>${
           v.done ? 'ありがとう!' : 'なにが ほしいかな?'}</button>
       </div>
-      ${caption(lineOrder(o.n, o.w), state.capHide && !v.done)}
+      ${caption(lineOrder(o.n, o.w), effective().capHide && !v.done)}
       <div class="basket chunky" aria-label="かご"><span class="b-ico" aria-hidden="true">🧺</span>${
         v.basket.length ? v.basket.map((w, k) => `<button class="b-item" data-act="unbasket" data-arg="${k}" aria-label="${w.ja}を もどす" ${v.done ? 'disabled' : ''}>${w.e}</button>`).join('')
                         : '<span class="hint">たなから えらんで いれてね</span>'}</div>
@@ -1970,8 +2143,8 @@ const VIEWS = {
       <div class="say-card chunky">
         <span class="pic">${pic(w, true)}</span>
         <span class="word">${hl(w.en, w.en[0])}</span>
-        ${state.caption === 'full' ? `<span class="kana-word">${KANA[w.en] || ''}</span>` : ''}
-        ${state.showJa ? `<span class="ja-word">${w.ja}</span>` : ''}
+        ${effective().caption === 'full' ? `<span class="kana-word">${KANA[w.en] || ''}</span>` : ''}
+        ${effective().showJa ? `<span class="ja-word">${w.ja}</span>` : ''}
       </div>
       <div class="row">
         <button class="listen chunky" data-act="spModel"><span class="l-ico" aria-hidden="true">🔊</span>おてほん</button>
@@ -2012,7 +2185,7 @@ const VIEWS = {
         <p class="pet-name"><span>${P.ja}</span><span class="hearts" aria-label="なかよし ${state.pet.hearts}">❤️ ${state.pet.hearts}</span></p>
       </div>
       <button class="pill alt chunky" data-act="closet">👕 きせかえ(🪙${state.coins})</button>
-      ${st > 0 && v.want ? caption(lineWant(v.want), state.capHide && !v.fed) : ''}
+      ${st > 0 && v.want ? caption(lineWant(v.want), effective().capHide && !v.fed) : ''}
       ${body}
       <ol class="growth" aria-label="そだちかた">${PET_STAGES.map((p, k) =>
         `<li class="${k <= st ? 'got' : ''} ${k === st ? 'now' : ''}"><span class="g-e">${k <= st ? figure({}, k) : '?'}</span><span class="g-at">⭐${p.at}</span></li>`).join('')}</ol>
@@ -2057,7 +2230,8 @@ const VIEWS = {
         : `<span class="sticker locked" aria-label="まだ">?</span>`).join('')}</div>`;
   },
 
-  parent() {
+  parent() { return parentScreen(); },
+  parentSettings() {
     const seg = (act, cur, opts) => `<div class="seg">${opts.map(([val, label]) =>
       `<button data-act="${act}" data-arg="${val}" aria-pressed="${String(cur) === String(val)}">${label}</button>`).join('')}</div>`;
     return `<section class="panel chunky">
@@ -2101,8 +2275,10 @@ const VIEWS = {
    英語を聞いて えらべたことが わかる ゲームだけ Can-do の しょうこ(action)に する。
    それ以外は「ふれた・さんか」の きろく。きろくの しっぱいで ゲームを とめない。
    ほし・コインなどの eigo-asobi-v1 には さわらない(learner-progress-v1 だけ)。 */
+let learningStorageUnavailable = false;
 const learnStore = (() => {
   try { const ls = window.localStorage; ls.getItem(LearningEngine.KEY); return ls; } catch (e) {
+    learningStorageUnavailable = true;
     const m = new Map(); // ほぞんが つかえない ときは この ページの あいだだけ おぼえる
     return { getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { m.set(k, String(v)); }, removeItem: k => { m.delete(k); } };
   }
@@ -2146,12 +2322,12 @@ window.addEventListener('pageshow', e => {
 function markReplay() { if (view.ev) view.ev.replayed = true; }
 function markMistake(v) { if (v.ev) v.ev.mistake = true; }
 // こたえた しゅんかんに がめんに こたえが みえていたか(字幕・ヒント・みほん)
-const captionShowsAnswer = () => state.caption !== 'off' && !state.capHide;
+const captionShowsAnswer = () => effective().caption !== 'off' && !effective().capHide;
 function questionSupport(v, answerHighlighted = false) {
   const lv = v.hintLv || 0;
   return LearningEngine.supportLevel({
     replayed: v.ev.replayed, mistakeBefore: v.ev.mistake,
-    japaneseHint: lv >= 1, answerVisible: captionShowsAnswer(), answerHighlighted: lv >= 2 || answerHighlighted
+    japaneseHint: lv >= 1 && effective().japaneseHint, answerVisible: captionShowsAnswer(), answerHighlighted: lv >= 2 || answerHighlighted
   });
 }
 function logEvidence(game, cat, itemId, v, answerHighlighted = false) {
@@ -2179,12 +2355,14 @@ function logPractice(game, cat, itemId, method = 'exposure', recognition = 'not_
 // あそんだ じかん(2ふん いじょう そうさが ないと かぞえない)
 let lastTouch = 0, engaged = 0;
 function noteEngagement() {
+  if (view.name === 'parent') { lastTouch = 0; return; }
   const t = Date.now();
   if (lastTouch && t - lastTouch < 120000) engaged += (t - lastTouch) / 1000;
   lastTouch = t;
 }
 function flushEngagement() { if (engaged >= 1) { try { learn.recordSession(engaged); } catch (e) { /* ignore */ } engaged = 0; } }
 setInterval(flushEngagement, 60000);
+window.addEventListener('pagehide', flushEngagement);
 document.addEventListener('visibilitychange', () => { if (document.hidden) { flushEngagement(); lastTouch = 0; } });
 
 /* ---------- game logic ---------- */
@@ -2258,7 +2436,7 @@ function spawnWave() {
   v.firstTry = true; v.locked = false; v.hintLv = 0; v.hintText = '';
   newQuestion(v, 'balloon', WORD_CAT.get(target), target.en);
   const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(v);
-  setCaption(linePop(target), state.capHide);
+  setCaption(linePop(target), effective().capHide);
   Speech.say(popLine(target));
 }
 function balloonLoop(v) {
@@ -2297,7 +2475,7 @@ function moleTarget() {
   newQuestion(view, 'mole', 'letters', view.words[view.i].l);
   $$('.mole.glow').forEach(m => m.classList.remove('glow'));
   const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(view);
-  setCaption(lineLetter(view.words[view.i]), state.capHide);
+  setCaption(lineLetter(view.words[view.i]), effective().capHide);
   Speech.say('#' + view.words[view.i].l);
 }
 function moleTick(v) {
@@ -2462,6 +2640,7 @@ function finish(mode) {
 }
 
 const ACTS = {
+  ...parentActions,
   home: () => go('home'),
   go: arg => go(arg),
   mode(arg) {
@@ -2526,6 +2705,17 @@ const ACTS = {
   hint() {
     const v = view, lv = v.hintLv = (v.hintLv || 0) + 1;
     const glow = el => el && el.classList.add('glow');
+    if (!effective().japaneseHint && lv === 1 && v.name !== 'memory') {
+      markReplay(); v.hintText = 'Listen slowly.';
+      const line = v.name === 'quiz' ? CAT[v.cat].q(v.round[v.i].answer)
+        : v.name === 'balloon' ? popLine(v.words[v.i])
+        : v.name === 'mole' ? '#' + v.words[v.i].l
+        : v.name === 'shopgame' ? orderLine(v.words[v.i].n, v.words[v.i].w)
+        : v.name === 'pet' ? wantLine(v.want) : v.words[v.i].en;
+      Speech.say(line, true);
+      const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(v);
+      return;
+    }
     if (v.name === 'quiz') {
       const q = v.round[v.i];
       if (lv === 1) { v.hintText = `にほんごで「${q.answer.ja}」`; Speech.sayAll([CAT[v.cat].q(q.answer), q.answer.en], true); }
@@ -2556,6 +2746,7 @@ const ACTS = {
     } else if (v.name === 'speak') {
       v.hintText = 'ゆっくり きいて、まねしてみよう'; Speech.say(v.words[v.i].en, true);
     }
+    if (!effective().japaneseHint && lv >= 2 && v.name !== 'memory') v.hintText = v.name === 'shopgame' ? v.hintText : 'Follow the glow.';
     if (v.name === 'spell') render();
     else { const hr = $('.hintrow'); if (hr) hr.outerHTML = hintRow(v); }
   },
@@ -2751,6 +2942,8 @@ const ACTS = {
   resetNo() { view.confirmReset = false; render(); },
   resetYes() { Object.assign(state, { stars: 0, learned: {}, coins: 10, owned: {}, wear: { head: null, face: null, hand: null, bg: null }, pet: { day: '', meals: 0, hearts: 0 } }); save(); view.confirmReset = false; render(); toast('きろくを けしました'); }
 };
+
+guardParentActions();
 
 // うごく まと(ふうせん・もぐら)は 指が ふれた しゅんかんに はんのう する
 document.addEventListener('pointerdown', e => {

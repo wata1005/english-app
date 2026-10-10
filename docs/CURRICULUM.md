@@ -65,3 +65,6 @@ All existing games, stars, coins, pet, outfits, captions and audio work; no chan
 
 ## 段階B 完了範囲（2026-10-10）
 既存5ゲームの未回答は参加・出題履歴に残し、正答率・自力度・習得判定・復習予定には影響させない。風船の時間切れ、出題途中の画面・ページ離脱を対象とする。詳細は LEARNING_ENGINE.md「段階B: 未回答」。段階Cと main へのマージは未実施。
+
+## 段階C 完了範囲（2026-10-10）
+ユーザーの段階Cへの移行承認により、保護者向けダッシュボード・入場確認・English-only表示を追加。段階Bの未回答ルールを維持する。仕様と実装範囲は PARENT_DASHBOARD.md「段階C 実装」を参照。mainへのマージと段階Dへの移行は未実施。
