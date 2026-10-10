@@ -90,6 +90,7 @@ test('Stage D: every mission level fits mobile and landscape viewports', { skip 
         targets: [...document.querySelectorAll('main button:not(.link)')].filter(b => b.getClientRects().length).every(b => b.getBoundingClientRect().height >= 44) });
       go('missions'); check('hub'); document.querySelector('details').open = true; check('expandedHub');
       showMissionIntro(); check('introDemo'); startMissionIntro(true); check('introGuided'); startMissionIntro(false); check('introSolo');
+      showTalkIntro(); check('talkDemo'); startTalkIntro(true); check('talkGuided'); startTalkIntro(false); check('talkSolo');
       for (const level of [1,2,3,4]) {
         learn.setLevel(level, 'parent_manual');
         for (const mode of Object.keys(MissionContent.MODES)) { startMission(mode); check(mode + level); }
@@ -140,4 +141,36 @@ test('Beginner course: demo, one-tap practice, optional solo, leaving and reward
   assert.equal(r.leave.unanswered, true); assert.deepEqual(r.leave.canDoIds, []); assert.equal(r.leave.support, 3);
   assert.equal(r.retry, true); assert.equal(r.wrong.firstTry, false); assert.ok(r.hinted.support >= 2);
   assert.equal(r.skipped.unanswered, true); assert.equal(r.skipCoins, 0);
+});
+
+
+test('Talking beginner: model, optional one-greeting practice, gesture and parent verification', { skip }, () => {
+  const { result: r, errors } = runInChrome(String.raw`
+    Speech.say = () => {}; Speech.sayAll = () => {};
+    const out = {}, attempts = () => learn.snapshot().attempts;
+    const confirm = () => { ACTS.missionObserve(); ACTS.parentGate(String(view.gate.answer)); ACTS.observationSupport('0'); ACTS.observationFirst('1'); ACTS.observationYes(); };
+    ACTS.missionStart('talk'); out.demo = view.name; out.demoText = document.querySelector('main').textContent;
+    ACTS.introReplay(); go('home'); out.noDemoEvidence = attempts().length === 0;
+    showTalkIntro(); ACTS.introTogether(); out.guided = { mode: view.mode, count: view.tasks.length, model: view.showModel, support: missionSupport() };
+    const stars = state.stars, coins = state.coins; ACTS.missionSaid(); ACTS.missionSaid(); out.self = attempts().at(-1); out.stars = state.stars - stars;
+    confirm(); out.confirmedModel = attempts().at(-1); ACTS.missionNext(); ACTS.missionNext(); out.coins = state.coins - coins;
+    out.finish = view.finished && !!document.querySelector('[data-act="introSolo"]') && !!document.querySelector('[data-act="home"]');
+    ACTS.introSolo(); out.solo = { mode: view.mode, count: view.tasks.length, model: view.showModel, prompt: missionTask().prompt };
+    ACTS.missionSaid(); out.soloSelf = attempts().at(-1); confirm(); out.soloConfirmed = attempts().at(-1);
+    ACTS.missionNext(); ACTS.missionChallenge(); out.challenge = { mode: view.mode, count: view.tasks.length };
+    go('home'); startTalkIntro(false); ACTS.missionTouchGreeting(); ACTS.missionTouchGreeting(); out.gesture = attempts().at(-1); const gestureCount = attempts().length; ACTS.missionObserve(); out.gestureNoObservation = view.name === 'mission' && attempts().length === gestureCount && !document.querySelector('[data-act="missionObserve"]');
+    startTalkIntro(true); go('home'); out.leave = attempts().at(-1);
+    startTalkIntro(true); const before = state.coins; ACTS.missionSkip(); out.skipCoins = state.coins - before; out.skip = attempts().at(-1);
+    window.__done(out);
+  `);
+  assert.deepEqual(errors, []);
+  assert.equal(r.demo, 'mission_intro'); assert.match(r.demoText, /Hello!/); assert.equal(r.noDemoEvidence, true);
+  assert.deepEqual(r.guided, { mode: 'talk', count: 1, model: true, support: 3 });
+  assert.equal(r.self.verified, false); assert.deepEqual(r.self.canDoIds, []); assert.equal(r.self.method, 'self_report'); assert.equal(r.self.support, 3);
+  assert.equal(r.confirmedModel.support, 3); assert.equal(r.stars, 1); assert.equal(r.coins, 5); assert.equal(r.finish, true);
+  assert.deepEqual(r.solo, { mode: 'talk', count: 1, model: false, prompt: 'Here you are!' });
+  assert.equal(r.soloSelf.verified, false); assert.equal(r.soloConfirmed.method, 'parent_observed'); assert.equal(r.soloConfirmed.support, 0); assert.deepEqual(r.soloConfirmed.canDoIds, ['L1_SP_01']);
+  assert.deepEqual(r.challenge, { mode: 'talk', count: 3 });
+  assert.equal(r.gesture.verified, false); assert.deepEqual(r.gesture.canDoIds, []); assert.equal(r.gesture.support, 3); assert.equal(r.gestureNoObservation, true);
+  assert.equal(r.leave.unanswered, true); assert.equal(r.leave.support, 3); assert.equal(r.skip.unanswered, true); assert.equal(r.skipCoins, 0);
 });

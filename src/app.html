@@ -862,7 +862,7 @@ const progress = (n, i) => `<div class="progress" aria-label="${i + 1} / ${n}">$
 /* ---------- views ---------- */
 const app = $('#app');
 let view = { name: 'home' };
-const TITLES = { speak: 'おしゃべり', mole: 'もぐらたたき', memory: 'しんけいすいじゃく', shopgame: 'おみせやさん', closet: 'きせかえ', balloon: 'ふうせんわり', pet: 'ペット', pick: 'どれに する?', cards: 'ことば カード', quiz: 'きいて タッチ', abc: 'ABC', spell: 'もじ ならべ', result: 'できたね!', stickers: 'シール ちょう', mission_intro: 'はじめての おてつだい', missions: 'おはなし ミッション', mission: 'おはなし ミッション', parent: 'おうちの かたへ' };
+const TITLES = { speak: 'おしゃべり', mole: 'もぐらたたき', memory: 'しんけいすいじゃく', shopgame: 'おみせやさん', closet: 'きせかえ', balloon: 'ふうせんわり', pet: 'ペット', pick: 'どれに する?', cards: 'ことば カード', quiz: 'きいて タッチ', abc: 'ABC', spell: 'もじ ならべ', result: 'できたね!', stickers: 'シール ちょう', mission_intro: 'はじめての ミッション', missions: 'おはなし ミッション', mission: 'おはなし ミッション', parent: 'おうちの かたへ' };
 
 function go(name, params = {}) { view = { name, ...params }; render(); window.scrollTo(0, 0); }
 
